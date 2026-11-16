@@ -1,0 +1,34 @@
+services:
+  rats-rats-rats:
+    build:
+      context: .
+    image: rats-rats-rats:local
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8080}:${CONTAINER_PORT:-3000}"
+    expose:
+      - "${CONTAINER_PORT:-3000}"
+    environment:
+      NODE_ENV: production
+      PORT: "${CONTAINER_PORT:-3000}"
+      TWITCH_CHANNEL: "${TWITCH_CHANNEL:-mintymelinda}"
+      ANIMATION_DURATION_MS: "${ANIMATION_DURATION_MS:-8000}"
+      GIF_SCALE: "${GIF_SCALE:-2}"
+      GIF_MAPPINGS: >-
+        {
+          "mindyfRatNes": "/assets/rat-nes.gif",
+          "mindyfRatDos": "/assets/rat-dos.gif",
+          "mindyfRatSnes": "/assets/rat-snes.gif"
+        }
+    volumes:
+      - ./assets:/assets:ro
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:' + process.env.PORT + '/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
