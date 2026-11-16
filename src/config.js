@@ -63,6 +63,7 @@ export function loadConfig(env = process.env) {
   return {
     channel,
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
+    gifQueueIntervalMs: positiveInteger(env.GIF_QUEUE_INTERVAL_MS, "GIF_QUEUE_INTERVAL_MS", 500, { min: 0, max: 60000 }),
     animationDurationMs: positiveInteger(
       env.ANIMATION_DURATION_MS,
       "ANIMATION_DURATION_MS",
