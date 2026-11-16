@@ -6,7 +6,7 @@ Implementation is developed on feature branches and submitted through pull reque
 
 ## Configuration
 
-All runtime configuration lives directly in `docker-compose.yaml`; no `.env` file is required. Edit the service's `environment` values and recreate the container to apply changes.
+All runtime configuration lives directly in `docker-compose.yaml`. Edit the service's `environment` values and recreate the container to apply changes.
 
 Each entry in `GIF_MAPPINGS` is an object with:
 - `path`: GIF file path under `/assets/`.
