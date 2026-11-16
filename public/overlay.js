@@ -40,11 +40,12 @@ function processGifQueue() {
   }, Math.max(0, Number(nextGif.queueIntervalMs) || 0));
 }
 
-function spawnGif({ src, durationMs, scale }) {
+function spawnGif({ src, durationMs, scale, yOffsetPx }) {
   const image = document.createElement("img");
   image.className = "rat-gif";
   image.alt = "";
   image.draggable = false;
+  image.style.bottom = `${Number(yOffsetPx) || 0}px`;
   image.src = src;
   overlay.append(image);
 
