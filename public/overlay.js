@@ -45,7 +45,7 @@ function spawnGif({ src, durationMs, scale, yOffsetPx }) {
   image.className = "rat-gif";
   image.alt = "";
   image.draggable = false;
-  image.style.bottom = `${Number(yOffsetPx) || 0}px`;
+  image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
   image.src = src;
   overlay.append(image);
 
