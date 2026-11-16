@@ -32,24 +32,18 @@ function spawnGif({ src, durationMs, scale }) {
   overlay.append(image);
 
   image.addEventListener("load", () => {
-    const width = image.naturalWidth * scale;
-    const height = image.naturalHeight * scale;
+    const scaledWidth = image.naturalWidth * scale;
     image.style.width = `${image.naturalWidth}px`;
-    image.style.height = `${image.naturalHeight}px`;
-    image.style.transform = `scale(${scale})`;
-    image.style.bottom = "0px";
+    image.style.height = "auto";
 
-    const distance = window.innerWidth + width;
     const animation = image.animate(
       [
-        { transform: `translateX(-${width}px) scale(${scale})` },
+        { transform: `translateX(-${scaledWidth}px) scale(${scale})` },
         { transform: `translateX(${window.innerWidth}px) scale(${scale})` },
       ],
       { duration: durationMs, easing: "linear", fill: "forwards" },
     );
     animation.addEventListener("finish", () => image.remove(), { once: true });
-    image.dataset.height = String(height);
-    void distance;
   }, { once: true });
 
   image.addEventListener("error", () => image.remove(), { once: true });
