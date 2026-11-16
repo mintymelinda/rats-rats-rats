@@ -8,32 +8,34 @@ test("loads the documented defaults", () => {
   assert.equal(config.port, 3000);
   assert.equal(config.animationDurationMs, 8000);
   assert.equal(config.gifQueueIntervalMs, 500);
-  assert.equal(config.gifYOffsetPx, 0);
   assert.equal(config.scale, 2);
-  assert.deepEqual(config.mappings.map(({ keyword }) => keyword), [
-    "mindyfRatNes",
-    "mindyfRatDos",
-    "mindyfRatSnes",
+  assert.deepEqual(config.mappings.map(({ keyword, yOffsetPx }) => [keyword, yOffsetPx]), [
+    ["mindyfRatNes", 0],
+    ["mindyfRatDos", 0],
+    ["mindyfRatSnes", 0],
   ]);
 });
 
-test("accepts configurable keyword-to-GIF pairs", () => {
+test("parses per-GIF paths and vertical offsets", () => {
   const mappings = parseMappings(JSON.stringify({
-    rat: "/assets/rat.gif",
-    "another rat": "/assets/another-rat.gif",
+    rat: { path: "/assets/rat.gif", yOffsetPx: 120 },
+    "another rat": { path: "/assets/another-rat.gif", yOffsetPx: -35 },
   }));
-  assert.deepEqual(mappings.map(({ keyword, path }) => [keyword, path]), [
-    ["rat", "/assets/rat.gif"],
-    ["another rat", "/assets/another-rat.gif"],
+  assert.deepEqual(mappings.map(({ keyword, path, yOffsetPx }) => [keyword, path, yOffsetPx]), [
+    ["rat", "/assets/rat.gif", 120],
+    ["another rat", "/assets/another-rat.gif", -35],
   ]);
 });
 
-test("rejects invalid mapping JSON, values, and paths", () => {
+test("rejects invalid mapping JSON, values, paths, and offsets", () => {
   assert.throws(() => parseMappings("{"), /valid JSON object/);
   assert.throws(() => parseMappings("[]"), /JSON object/);
-  assert.throws(() => parseMappings('{"rat":"/etc/passwd.gif"}'), /under \/assets\//);
-  assert.throws(() => parseMappings('{"rat":"/assets/../outside.gif"}'), /escapes/);
-  assert.throws(() => parseMappings('{"rat":"/assets/rat.png"}'), /\.gif file/);
+  assert.throws(() => parseMappings('{"rat":"/assets/rat.gif"}'), /must be an object/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/etc/passwd.gif"}}'), /under \/assets\//);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/../outside.gif"}}'), /escapes/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.png"}}'), /\.gif file/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","yOffsetPx":1.5}}'), /yOffsetPx/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","yOffsetPx":10001}}'), /yOffsetPx/);
 });
 
 test("validates scale, channel, duration, and port", () => {
@@ -42,10 +44,6 @@ test("validates scale, channel, duration, and port", () => {
   }
   assert.equal(loadConfig({ GIF_SCALE: "8", TWITCH_CHANNEL: "#Example_Channel" }).scale, 8);
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "1250" }).gifQueueIntervalMs, 1250);
-  assert.equal(loadConfig({ GIF_Y_OFFSET_PX: "120" }).gifYOffsetPx, 120);
-  assert.equal(loadConfig({ GIF_Y_OFFSET_PX: "-35" }).gifYOffsetPx, -35);
-  assert.throws(() => loadConfig({ GIF_Y_OFFSET_PX: "1.5" }), /GIF_Y_OFFSET_PX/);
-  assert.throws(() => loadConfig({ GIF_Y_OFFSET_PX: "10001" }), /GIF_Y_OFFSET_PX/);
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "0" }).gifQueueIntervalMs, 0);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "-1" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
