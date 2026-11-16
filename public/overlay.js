@@ -35,12 +35,10 @@ function processGifQueue() {
   const nextGif = gifQueue.shift();
   spawnGif(nextGif);
 
-  if (gifQueue.length > 0) {
-    queueTimer = window.setTimeout(() => {
-      queueTimer = undefined;
-      processGifQueue();
-    }, gifQueueIntervalMs);
-  }
+  queueTimer = window.setTimeout(() => {
+    queueTimer = undefined;
+    processGifQueue();
+  }, gifQueueIntervalMs);
 }
 
 function spawnGif({ src, durationMs, scale }) {
