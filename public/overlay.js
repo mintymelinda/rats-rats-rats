@@ -1,6 +1,5 @@
 const overlay = document.querySelector("#overlay");
 const reconnectDelayMs = 1500;
-const gifQueueIntervalMs = 500;
 const gifQueue = [];
 let queueTimer;
 let socket;
@@ -38,7 +37,7 @@ function processGifQueue() {
   queueTimer = window.setTimeout(() => {
     queueTimer = undefined;
     processGifQueue();
-  }, gifQueueIntervalMs);
+  }, Math.max(0, Number(nextGif.queueIntervalMs) || 0));
 }
 
 function spawnGif({ src, durationMs, scale }) {
