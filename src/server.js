@@ -29,7 +29,7 @@ const mimeTypes = {
 
 function sendFile(response, filePath) {
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-    response.writeHead(404).end("Not found");
+    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("Not found");
     return;
   }
   response.writeHead(200, {
@@ -40,10 +40,15 @@ function sendFile(response, filePath) {
   fs.createReadStream(filePath).pipe(response);
 }
 
+const publicFiles = new Map([
+  ["/overlay.js", "overlay.js"],
+  ["/overlay.css", "overlay.css"],
+]);
+
 const server = http.createServer((request, response) => {
   const pathname = new URL(request.url, "http://localhost").pathname;
   if (pathname === "/healthz") {
-    response.writeHead(200, { "Content-Type": "application/json" });
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     response.end(JSON.stringify({ status: "ok", channel: config.channel }));
     return;
   }
@@ -51,17 +56,22 @@ const server = http.createServer((request, response) => {
     sendFile(response, path.join(PUBLIC_DIR, "index.html"));
     return;
   }
+  const publicFile = publicFiles.get(pathname);
+  if (publicFile) {
+    sendFile(response, path.join(PUBLIC_DIR, publicFile));
+    return;
+  }
   if (pathname.startsWith("/assets/")) {
     const relative = pathname.slice("/assets/".length);
     const filePath = path.resolve("/assets", relative);
     if (!filePath.startsWith("/assets/")) {
-      response.writeHead(400).end("Invalid asset path");
+      response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" }).end("Invalid asset path");
       return;
     }
     sendFile(response, filePath);
     return;
   }
-  response.writeHead(404).end("Not found");
+  response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("Not found");
 });
 
 const webSockets = new WebSocketServer({ noServer: true });
