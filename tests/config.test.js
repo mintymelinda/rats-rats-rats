@@ -6,28 +6,37 @@ test("loads the documented defaults", () => {
   const config = loadConfig({});
   assert.equal(config.channel, "mintymelinda");
   assert.equal(config.port, 3000);
-  assert.equal(config.animationDurationMs, 8000);
   assert.equal(config.gifQueueIntervalMs, 500);
-  assert.equal(config.scale, 2);
-  assert.deepEqual(config.mappings.map(({ keyword, yOffsetPx }) => [keyword, yOffsetPx]), [
-    ["mindyfRatNes", 0],
-    ["mindyfRatDos", 0],
-    ["mindyfRatSnes", 0],
+  assert.deepEqual(config.mappings.map(({ keyword, durationMs, scale, yOffsetPx }) => [
+    keyword,
+    durationMs,
+    scale,
+    yOffsetPx,
+  ]), [
+    ["mindyfRatNes", 8000, 2, 0],
+    ["mindyfRatDos", 8000, 2, 0],
+    ["mindyfRatSnes", 8000, 2, 0],
   ]);
 });
 
-test("parses per-GIF paths and vertical offsets", () => {
+test("parses per-GIF paths, animation durations, scales, and vertical offsets", () => {
   const mappings = parseMappings(JSON.stringify({
-    rat: { path: "/assets/rat.gif", yOffsetPx: 120 },
-    "another rat": { path: "/assets/another-rat.gif", yOffsetPx: -35 },
+    rat: { path: "/assets/rat.gif", durationMs: 12000, scale: 4, yOffsetPx: 120 },
+    "another rat": { path: "/assets/another-rat.gif", durationMs: 4500, scale: 1, yOffsetPx: -35 },
   }));
-  assert.deepEqual(mappings.map(({ keyword, path, yOffsetPx }) => [keyword, path, yOffsetPx]), [
-    ["rat", "/assets/rat.gif", 120],
-    ["another rat", "/assets/another-rat.gif", -35],
+  assert.deepEqual(mappings.map(({ keyword, path, durationMs, scale, yOffsetPx }) => [
+    keyword,
+    path,
+    durationMs,
+    scale,
+    yOffsetPx,
+  ]), [
+    ["rat", "/assets/rat.gif", 12000, 4, 120],
+    ["another rat", "/assets/another-rat.gif", 4500, 1, -35],
   ]);
 });
 
-test("rejects invalid mapping JSON, values, paths, and offsets", () => {
+test("rejects invalid mapping JSON, values, paths, durations, scales, and offsets", () => {
   assert.throws(() => parseMappings("{"), /valid JSON object/);
   assert.throws(() => parseMappings("[]"), /JSON object/);
   assert.throws(() => parseMappings('{"rat":"/assets/rat.gif"}'), /must be an object/);
@@ -36,18 +45,17 @@ test("rejects invalid mapping JSON, values, paths, and offsets", () => {
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.png"}}'), /\.gif file/);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","yOffsetPx":1.5}}'), /yOffsetPx/);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","yOffsetPx":10001}}'), /yOffsetPx/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","durationMs":249}}'), /durationMs/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","durationMs":120001}}'), /durationMs/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","scale":3}}'), /scale/);
 });
 
-test("validates scale, channel, duration, and port", () => {
-  for (const scale of ["0", "3", "16", "1.5"]) {
-    assert.throws(() => loadConfig({ GIF_SCALE: scale }), /GIF_SCALE/);
-  }
-  assert.equal(loadConfig({ GIF_SCALE: "8", TWITCH_CHANNEL: "#Example_Channel" }).scale, 8);
+test("validates channel, port, and queue interval", () => {
+  assert.equal(loadConfig({ TWITCH_CHANNEL: "#Example_Channel" }).channel, "example_channel");
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "1250" }).gifQueueIntervalMs, 1250);
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "0" }).gifQueueIntervalMs, 0);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "-1" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ TWITCH_CHANNEL: "not a channel" }), /TWITCH_CHANNEL/);
-  assert.throws(() => loadConfig({ ANIMATION_DURATION_MS: "0" }), /ANIMATION_DURATION_MS/);
   assert.throws(() => loadConfig({ PORT: "70000" }), /PORT/);
 });
