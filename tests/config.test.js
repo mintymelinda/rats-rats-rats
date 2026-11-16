@@ -8,6 +8,7 @@ test("loads the documented defaults", () => {
   assert.equal(config.port, 3000);
   assert.equal(config.animationDurationMs, 8000);
   assert.equal(config.gifQueueIntervalMs, 500);
+  assert.equal(config.gifYOffsetPx, 0);
   assert.equal(config.scale, 2);
   assert.deepEqual(config.mappings.map(({ keyword }) => keyword), [
     "mindyfRatNes",
@@ -41,6 +42,10 @@ test("validates scale, channel, duration, and port", () => {
   }
   assert.equal(loadConfig({ GIF_SCALE: "8", TWITCH_CHANNEL: "#Example_Channel" }).scale, 8);
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "1250" }).gifQueueIntervalMs, 1250);
+  assert.equal(loadConfig({ GIF_Y_OFFSET_PX: "120" }).gifYOffsetPx, 120);
+  assert.equal(loadConfig({ GIF_Y_OFFSET_PX: "-35" }).gifYOffsetPx, -35);
+  assert.throws(() => loadConfig({ GIF_Y_OFFSET_PX: "1.5" }), /GIF_Y_OFFSET_PX/);
+  assert.throws(() => loadConfig({ GIF_Y_OFFSET_PX: "10001" }), /GIF_Y_OFFSET_PX/);
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "0" }).gifQueueIntervalMs, 0);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "-1" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
