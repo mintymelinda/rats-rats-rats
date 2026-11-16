@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const DEFAULT_MAPPINGS = {
-  mindyfRatNes: { path: "/assets/rat-nes.gif", yOffsetPx: 0 },
-  mindyfRatDos: { path: "/assets/rat-dos.gif", yOffsetPx: 0 },
-  mindyfRatSnes: { path: "/assets/rat-snes.gif", yOffsetPx: 0 },
+  mindyfRatNes: { path: "/assets/rat-nes.gif", durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false },
+  mindyfRatDos: { path: "/assets/rat-dos.gif", durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false },
+  mindyfRatSnes: { path: "/assets/rat-snes.gif", durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false },
 };
 
 function positiveInteger(value, name, fallback, { min = 1, max = Number.MAX_SAFE_INTEGER } = {}) {
@@ -38,7 +38,7 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
   return Object.entries(mappings).map(([keyword, mapping]) => {
     if (!keyword.trim()) throw new Error("GIF_MAPPINGS keywords cannot be empty");
     if (!mapping || Array.isArray(mapping) || typeof mapping !== "object") {
-      throw new Error(`GIF mapping "${keyword}" must be an object with path and optional yOffsetPx`);
+      throw new Error(`GIF mapping "${keyword}" must be an object with path and optional display settings`);
     }
 
     const gifPath = mapping.path;
@@ -53,11 +53,23 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
       throw new Error(`GIF mapping "${keyword}" escapes the assets directory`);
     }
 
+    const scale = positiveInteger(mapping.scale, `GIF mapping "${keyword}" scale`, 2);
+    if (![1, 2, 4, 8].includes(scale)) {
+      throw new Error(`GIF mapping "${keyword}" scale must be one of: 1, 2, 4, 8`);
+    }
+    const flip = mapping.flip ?? false;
+    if (typeof flip !== "boolean") {
+      throw new Error(`GIF mapping "${keyword}" flip must be a boolean`);
+    }
+
     return {
       keyword,
       normalizedKeyword: keyword.toLocaleLowerCase("en-US"),
       path: gifPath,
+      durationMs: positiveInteger(mapping.durationMs, `GIF mapping "${keyword}" durationMs`, 8000, { min: 250, max: 120000 }),
+      scale,
       yOffsetPx: parseYOffset(mapping.yOffsetPx, keyword),
+      flip,
       exists: fs.existsSync(gifPath) && fs.statSync(gifPath).isFile(),
     };
   });
@@ -69,22 +81,10 @@ export function loadConfig(env = process.env) {
     throw new Error("TWITCH_CHANNEL must be a valid Twitch channel login");
   }
 
-  const scale = positiveInteger(env.GIF_SCALE, "GIF_SCALE", 2);
-  if (![1, 2, 4, 8].includes(scale)) {
-    throw new Error("GIF_SCALE must be one of: 1, 2, 4, 8");
-  }
-
   return {
     channel,
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
     gifQueueIntervalMs: positiveInteger(env.GIF_QUEUE_INTERVAL_MS, "GIF_QUEUE_INTERVAL_MS", 500, { min: 0, max: 60000 }),
-    animationDurationMs: positiveInteger(
-      env.ANIMATION_DURATION_MS,
-      "ANIMATION_DURATION_MS",
-      8000,
-      { min: 250, max: 120000 },
-    ),
-    scale,
     mappings: parseMappings(env.GIF_MAPPINGS),
   };
 }

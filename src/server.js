@@ -16,7 +16,7 @@ for (const mapping of config.mappings) {
     console.warn(`GIF for keyword "${mapping.keyword}" not found: ${mapping.path} (will be skipped until the file is added)`);
   }
 }
-console.info(`Loaded ${config.mappings.length} keyword mapping(s) for #${config.channel}; scale=${config.scale}; duration=${config.animationDurationMs}ms`);
+console.info(`Loaded ${config.mappings.length} keyword mapping(s) for #${config.channel}`);
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -105,10 +105,11 @@ const irc = new TwitchIrcClient({
         type: "spawn",
         keyword: match.keyword,
         src: match.path,
-        durationMs: config.animationDurationMs,
-        scale: config.scale,
+        durationMs: match.durationMs,
+        scale: match.scale,
         queueIntervalMs: config.gifQueueIntervalMs,
         yOffsetPx: match.yOffsetPx,
+        flip: match.flip,
       });
     }
   },

@@ -40,12 +40,12 @@ function processGifQueue() {
   }, Math.max(0, Number(nextGif.queueIntervalMs) || 0));
 }
 
-function spawnGif({ src, durationMs, scale, yOffsetPx }) {
+function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false }) {
   const image = document.createElement("img");
   image.className = "rat-gif";
   image.alt = "";
   image.draggable = false;
-  image.style.bottom = `${Number(yOffsetPx) || 0}px`;
+  image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
   image.src = src;
   overlay.append(image);
 
@@ -54,10 +54,11 @@ function spawnGif({ src, durationMs, scale, yOffsetPx }) {
     image.style.width = `${image.naturalWidth}px`;
     image.style.height = "auto";
 
+    const horizontalScale = flip ? -1 : 1;
     const animation = image.animate(
       [
-        { transform: `translateX(-${scaledWidth}px) scale(${scale})` },
-        { transform: `translateX(${window.innerWidth}px) scale(${scale})` },
+        { transform: `translateX(-${scaledWidth}px) scaleX(${horizontalScale}) scale(${scale})` },
+        { transform: `translateX(${window.innerWidth}px) scaleX(${horizontalScale}) scale(${scale})` },
       ],
       { duration: durationMs, easing: "linear", fill: "forwards" },
     );
