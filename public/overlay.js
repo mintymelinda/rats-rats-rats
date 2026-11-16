@@ -1,5 +1,7 @@
 const overlay = document.querySelector("#overlay");
 const reconnectDelayMs = 1500;
+const gifQueue = [];
+let queueTimer;
 let socket;
 
 function connect() {
@@ -13,7 +15,10 @@ function connect() {
     } catch {
       return;
     }
-    if (payload.type === "spawn") spawnGif(payload);
+    if (payload.type === "spawn") {
+      gifQueue.push(payload);
+      processGifQueue();
+    }
   });
 
   socket.addEventListener("close", () => {
@@ -21,6 +26,18 @@ function connect() {
   });
 
   socket.addEventListener("error", () => socket.close());
+}
+
+function processGifQueue() {
+  if (queueTimer || gifQueue.length === 0) return;
+
+  const nextGif = gifQueue.shift();
+  spawnGif(nextGif);
+
+  queueTimer = window.setTimeout(() => {
+    queueTimer = undefined;
+    processGifQueue();
+  }, Math.max(0, Number(nextGif.queueIntervalMs) || 0));
 }
 
 function spawnGif({ src, durationMs, scale }) {

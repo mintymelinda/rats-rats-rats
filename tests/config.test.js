@@ -7,6 +7,7 @@ test("loads the documented defaults", () => {
   assert.equal(config.channel, "mintymelinda");
   assert.equal(config.port, 3000);
   assert.equal(config.animationDurationMs, 8000);
+  assert.equal(config.gifQueueIntervalMs, 500);
   assert.equal(config.scale, 2);
   assert.deepEqual(config.mappings.map(({ keyword }) => keyword), [
     "mindyfRatNes",
@@ -39,6 +40,10 @@ test("validates scale, channel, duration, and port", () => {
     assert.throws(() => loadConfig({ GIF_SCALE: scale }), /GIF_SCALE/);
   }
   assert.equal(loadConfig({ GIF_SCALE: "8", TWITCH_CHANNEL: "#Example_Channel" }).scale, 8);
+  assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "1250" }).gifQueueIntervalMs, 1250);
+  assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "0" }).gifQueueIntervalMs, 0);
+  assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "-1" }), /GIF_QUEUE_INTERVAL_MS/);
+  assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ TWITCH_CHANNEL: "not a channel" }), /TWITCH_CHANNEL/);
   assert.throws(() => loadConfig({ ANIMATION_DURATION_MS: "0" }), /ANIMATION_DURATION_MS/);
   assert.throws(() => loadConfig({ PORT: "70000" }), /PORT/);
