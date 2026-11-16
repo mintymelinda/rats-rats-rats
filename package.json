@@ -1,0 +1,17 @@
+{
+  "name": "rats-rats-rats",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Docker-based Twitch chat GIF browser-source overlay",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
