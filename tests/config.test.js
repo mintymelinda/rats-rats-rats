@@ -7,36 +7,38 @@ test("loads the documented defaults", () => {
   assert.equal(config.channel, "mintymelinda");
   assert.equal(config.port, 3000);
   assert.equal(config.gifQueueIntervalMs, 500);
-  assert.deepEqual(config.mappings.map(({ keyword, durationMs, scale, yOffsetPx }) => [
+  assert.deepEqual(config.mappings.map(({ keyword, durationMs, scale, yOffsetPx, flip }) => [
     keyword,
     durationMs,
     scale,
     yOffsetPx,
+    flip,
   ]), [
-    ["mindyfRatNes", 8000, 2, 0],
-    ["mindyfRatDos", 8000, 2, 0],
-    ["mindyfRatSnes", 8000, 2, 0],
+    ["mindyfRatNes", 8000, 2, 0, false],
+    ["mindyfRatDos", 8000, 2, 0, false],
+    ["mindyfRatSnes", 8000, 2, 0, false],
   ]);
 });
 
-test("parses per-GIF paths, animation durations, scales, and vertical offsets", () => {
+test("parses per-GIF paths, animation durations, scales, offsets, and flips", () => {
   const mappings = parseMappings(JSON.stringify({
-    rat: { path: "/assets/rat.gif", durationMs: 12000, scale: 4, yOffsetPx: 120 },
+    rat: { path: "/assets/rat.gif", durationMs: 12000, scale: 4, yOffsetPx: 120, flip: true },
     "another rat": { path: "/assets/another-rat.gif", durationMs: 4500, scale: 1, yOffsetPx: -35 },
   }));
-  assert.deepEqual(mappings.map(({ keyword, path, durationMs, scale, yOffsetPx }) => [
+  assert.deepEqual(mappings.map(({ keyword, path, durationMs, scale, yOffsetPx, flip }) => [
     keyword,
     path,
     durationMs,
     scale,
     yOffsetPx,
+    flip,
   ]), [
-    ["rat", "/assets/rat.gif", 12000, 4, 120],
-    ["another rat", "/assets/another-rat.gif", 4500, 1, -35],
+    ["rat", "/assets/rat.gif", 12000, 4, 120, true],
+    ["another rat", "/assets/another-rat.gif", 4500, 1, -35, false],
   ]);
 });
 
-test("rejects invalid mapping JSON, values, paths, durations, scales, and offsets", () => {
+test("rejects invalid mapping JSON, values, paths, durations, scales, offsets, and flips", () => {
   assert.throws(() => parseMappings("{"), /valid JSON object/);
   assert.throws(() => parseMappings("[]"), /JSON object/);
   assert.throws(() => parseMappings('{"rat":"/assets/rat.gif"}'), /must be an object/);
@@ -48,6 +50,7 @@ test("rejects invalid mapping JSON, values, paths, durations, scales, and offset
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","durationMs":249}}'), /durationMs/);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","durationMs":120001}}'), /durationMs/);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","scale":3}}'), /scale/);
+  assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","flip":"true"}}'), /flip/);
 });
 
 test("validates channel, port, and queue interval", () => {
