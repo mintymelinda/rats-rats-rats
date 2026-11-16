@@ -19,19 +19,22 @@ services:
             "path": "/assets/rat-nes.gif",
             "durationMs": 8000,
             "scale": 2,
-            "yOffsetPx": 0
+            "yOffsetPx": 0,
+            "flip": false
           },
           "mindyfRatDos": {
             "path": "/assets/rat-dos.gif",
             "durationMs": 8000,
             "scale": 2,
-            "yOffsetPx": 80
+            "yOffsetPx": 80,
+            "flip": false
           },
           "mindyfRatSnes": {
             "path": "/assets/rat-snes.gif",
             "durationMs": 8000,
             "scale": 2,
-            "yOffsetPx": 160
+            "yOffsetPx": 160,
+            "flip": false
           }
         }
     volumes:
