@@ -60,8 +60,14 @@ export function loadConfig(env = process.env) {
     throw new Error("GIF_SCALE must be one of: 1, 2, 4, 8");
   }
 
+  const gifYOffsetPx = Number(env.GIF_Y_OFFSET_PX ?? 0);
+  if (!Number.isInteger(gifYOffsetPx) || gifYOffsetPx < -10000 || gifYOffsetPx > 10000) {
+    throw new Error("GIF_Y_OFFSET_PX must be an integer between -10000 and 10000");
+  }
+
   return {
     channel,
+    gifYOffsetPx,
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
     gifQueueIntervalMs: positiveInteger(env.GIF_QUEUE_INTERVAL_MS, "GIF_QUEUE_INTERVAL_MS", 500, { min: 0, max: 60000 }),
     animationDurationMs: positiveInteger(
