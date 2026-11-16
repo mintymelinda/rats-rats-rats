@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const DEFAULT_MAPPINGS = {
-  mindyfRatNes: "/assets/rat-nes.gif",
-  mindyfRatDos: "/assets/rat-dos.gif",
-  mindyfRatSnes: "/assets/rat-snes.gif",
+  mindyfRatNes: { path: "/assets/rat-nes.gif", yOffsetPx: 0 },
+  mindyfRatDos: { path: "/assets/rat-dos.gif", yOffsetPx: 0 },
+  mindyfRatSnes: { path: "/assets/rat-snes.gif", yOffsetPx: 0 },
 };
 
 function positiveInteger(value, name, fallback, { min = 1, max = Number.MAX_SAFE_INTEGER } = {}) {
@@ -13,6 +13,14 @@ function positiveInteger(value, name, fallback, { min = 1, max = Number.MAX_SAFE
     throw new Error(`${name} must be an integer between ${min} and ${max}`);
   }
   return parsed;
+}
+
+function parseYOffset(value, keyword) {
+  const yOffsetPx = Number(value ?? 0);
+  if (!Number.isInteger(yOffsetPx) || yOffsetPx < -10000 || yOffsetPx > 10000) {
+    throw new Error(`GIF mapping "${keyword}" yOffsetPx must be an integer between -10000 and 10000`);
+  }
+  return yOffsetPx;
 }
 
 export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
@@ -24,13 +32,18 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
   }
 
   if (!mappings || Array.isArray(mappings) || typeof mappings !== "object") {
-    throw new Error("GIF_MAPPINGS must be a JSON object of keyword-to-path pairs");
+    throw new Error("GIF_MAPPINGS must be a JSON object of keyword-to-GIF mappings");
   }
 
-  for (const [keyword, gifPath] of Object.entries(mappings)) {
+  return Object.entries(mappings).map(([keyword, mapping]) => {
     if (!keyword.trim()) throw new Error("GIF_MAPPINGS keywords cannot be empty");
+    if (!mapping || Array.isArray(mapping) || typeof mapping !== "object") {
+      throw new Error(`GIF mapping "${keyword}" must be an object with path and optional yOffsetPx`);
+    }
+
+    const gifPath = mapping.path;
     if (typeof gifPath !== "string" || !gifPath.startsWith("/assets/")) {
-      throw new Error(`GIF mapping "${keyword}" must point to a file under /assets/`);
+      throw new Error(`GIF mapping "${keyword}" path must point to a file under /assets/`);
     }
     if (path.extname(gifPath).toLowerCase() !== ".gif") {
       throw new Error(`GIF mapping "${keyword}" must reference a .gif file`);
@@ -39,14 +52,15 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
     if (resolved !== "/assets" && !resolved.startsWith("/assets/")) {
       throw new Error(`GIF mapping "${keyword}" escapes the assets directory`);
     }
-  }
 
-  return Object.entries(mappings).map(([keyword, gifPath]) => ({
-    keyword,
-    normalizedKeyword: keyword.toLocaleLowerCase("en-US"),
-    path: gifPath,
-    exists: fs.existsSync(gifPath) && fs.statSync(gifPath).isFile(),
-  }));
+    return {
+      keyword,
+      normalizedKeyword: keyword.toLocaleLowerCase("en-US"),
+      path: gifPath,
+      yOffsetPx: parseYOffset(mapping.yOffsetPx, keyword),
+      exists: fs.existsSync(gifPath) && fs.statSync(gifPath).isFile(),
+    };
+  });
 }
 
 export function loadConfig(env = process.env) {
@@ -60,14 +74,8 @@ export function loadConfig(env = process.env) {
     throw new Error("GIF_SCALE must be one of: 1, 2, 4, 8");
   }
 
-  const gifYOffsetPx = Number(env.GIF_Y_OFFSET_PX ?? 0);
-  if (!Number.isInteger(gifYOffsetPx) || gifYOffsetPx < -10000 || gifYOffsetPx > 10000) {
-    throw new Error("GIF_Y_OFFSET_PX must be an integer between -10000 and 10000");
-  }
-
   return {
     channel,
-    gifYOffsetPx,
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
     gifQueueIntervalMs: positiveInteger(env.GIF_QUEUE_INTERVAL_MS, "GIF_QUEUE_INTERVAL_MS", 500, { min: 0, max: 60000 }),
     animationDurationMs: positiveInteger(
