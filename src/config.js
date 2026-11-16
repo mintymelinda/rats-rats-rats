@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const DEFAULT_MAPPINGS = {
-  mindyfRatNes: { path: "/assets/rat-nes.gif", durationMs: 8000, scale: 2, yOffsetPx: 0 },
-  mindyfRatDos: { path: "/assets/rat-dos.gif", durationMs: 8000, scale: 2, yOffsetPx: 0 },
-  mindyfRatSnes: { path: "/assets/rat-snes.gif", durationMs: 8000, scale: 2, yOffsetPx: 0 },
+  mindyfRatNes: { path: "/assets/rat-nes.gif", durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false },
+  mindyfRatDos: { path: "/assets/rat-dos.gif", durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false },
+  mindyfRatSnes: { path: "/assets/rat-snes.gif", durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false },
 };
 
 function positiveInteger(value, name, fallback, { min = 1, max = Number.MAX_SAFE_INTEGER } = {}) {
@@ -57,6 +57,10 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
     if (![1, 2, 4, 8].includes(scale)) {
       throw new Error(`GIF mapping "${keyword}" scale must be one of: 1, 2, 4, 8`);
     }
+    const flip = mapping.flip ?? false;
+    if (typeof flip !== "boolean") {
+      throw new Error(`GIF mapping "${keyword}" flip must be a boolean`);
+    }
 
     return {
       keyword,
@@ -65,6 +69,7 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
       durationMs: positiveInteger(mapping.durationMs, `GIF mapping "${keyword}" durationMs`, 8000, { min: 250, max: 120000 }),
       scale,
       yOffsetPx: parseYOffset(mapping.yOffsetPx, keyword),
+      flip,
       exists: fs.existsSync(gifPath) && fs.statSync(gifPath).isFile(),
     };
   });
