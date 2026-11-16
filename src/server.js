@@ -108,7 +108,7 @@ const irc = new TwitchIrcClient({
         durationMs: config.animationDurationMs,
         scale: config.scale,
         queueIntervalMs: config.gifQueueIntervalMs,
-        yOffsetPx: config.gifYOffsetPx,
+        yOffsetPx: match.yOffsetPx,
       });
     }
   },
