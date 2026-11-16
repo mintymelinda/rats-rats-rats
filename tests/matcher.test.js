@@ -22,6 +22,20 @@ test("matches every configured keyword found in a message", () => {
   );
 });
 
+test("spawns one match for every repeated occurrence of a keyword", () => {
+  assert.deepEqual(
+    findMatches("mindyfRatNes mindyfRatNes MINDYFRATNES", mappings).map(({ keyword }) => keyword),
+    ["mindyfRatNes", "mindyfRatNes", "mindyfRatNes"],
+  );
+});
+
+test("preserves the order of repeated and different keywords in the message", () => {
+  assert.deepEqual(
+    findMatches("mindyfRatDos mindyfRatNes mindyfRatDos", mappings).map(({ keyword }) => keyword),
+    ["mindyfRatDos", "mindyfRatNes", "mindyfRatDos"],
+  );
+});
+
 test("does not match absent keywords", () => {
   assert.deepEqual(findMatches("hello chat", mappings), []);
 });
