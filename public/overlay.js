@@ -40,7 +40,16 @@ function processGifQueue() {
   }, Math.max(0, Number(nextGif.queueIntervalMs) || 0));
 }
 
-function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false }) {
+function announceMoonrat() {
+  const announcement = document.createElement("div");
+  announcement.className = "moonrat-announcement";
+  announcement.textContent = "MOONRAT";
+  announcement.setAttribute("aria-hidden", "true");
+  overlay.append(announcement);
+  announcement.addEventListener("animationend", () => announcement.remove(), { once: true });
+}
+
+function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false }) {
   const image = document.createElement("img");
   image.className = "rat-gif";
   image.alt = "";
@@ -49,16 +58,20 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false }) {
   image.src = src;
   overlay.append(image);
 
+  if (moonwalk) announceMoonrat();
+
   image.addEventListener("load", () => {
     const scaledWidth = image.naturalWidth * scale;
     image.style.width = `${image.naturalWidth}px`;
     image.style.height = "auto";
 
     const horizontalScale = flip ? -1 : 1;
+    const startX = moonwalk ? window.innerWidth : -scaledWidth;
+    const endX = moonwalk ? -scaledWidth : window.innerWidth;
     const animation = image.animate(
       [
-        { transform: `translateX(-${scaledWidth}px) scaleX(${horizontalScale}) scale(${scale})` },
-        { transform: `translateX(${window.innerWidth}px) scaleX(${horizontalScale}) scale(${scale})` },
+        { transform: `translateX(${startX}px) scaleX(${horizontalScale}) scale(${scale})` },
+        { transform: `translateX(${endX}px) scaleX(${horizontalScale}) scale(${scale})` },
       ],
       { duration: durationMs, easing: "linear", fill: "forwards" },
     );
