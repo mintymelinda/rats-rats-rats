@@ -36,3 +36,48 @@ body {
   transform-origin: bottom left;
   will-change: transform;
 }
+
+.moonrat-announcement {
+  position: absolute;
+  z-index: 1000;
+  top: 12%;
+  left: 50%;
+  padding: 0.12em 0.35em;
+  color: #fff36b;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(2rem, 8vw, 6rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow:
+    4px 4px 0 #a400a8,
+    -3px -3px 0 #a400a8,
+    3px -3px 0 #a400a8,
+    -3px 3px 0 #a400a8,
+    0 0 24px rgb(255 243 107 / 75%);
+  transform: translateX(-50%) rotate(-5deg) scale(0.2);
+  animation: moonrat-announcement 2.5s ease-out forwards;
+}
+
+@keyframes moonrat-announcement {
+  12% {
+    opacity: 1;
+    transform: translateX(-50%) rotate(-5deg) scale(1.15);
+  }
+
+  25% {
+    transform: translateX(-50%) rotate(3deg) scale(1);
+  }
+
+  78% {
+    opacity: 1;
+    transform: translateX(-50%) rotate(3deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) rotate(3deg) scale(0.85);
+  }
+}
