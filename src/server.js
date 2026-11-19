@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
 import { loadConfig } from "./config.js";
 import { findMatches } from "./matcher.js";
+import { shouldMoonwalk } from "./moonwalk.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -110,6 +111,7 @@ const irc = new TwitchIrcClient({
         queueIntervalMs: config.gifQueueIntervalMs,
         yOffsetPx: match.yOffsetPx,
         flip: match.flip,
+        moonwalk: shouldMoonwalk(),
       });
     }
   },
