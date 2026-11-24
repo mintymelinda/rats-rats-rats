@@ -17,6 +17,10 @@ Each entry in `GIF_MAPPINGS` is an object with:
 
 For example, each keyword can have its own animation speed, size, vertical placement, and facing direction. Horizontal travel and animation timing remain independent of the vertical offset. Every GIF spawn also has a 1% chance to moonwalk: its horizontal facing is inverted for that spawn, but it still travels left-to-right. The overlay displays a prominent `MOONRAT` announcement when this happens.
 
+### MOONRAT debug mode
+
+Set `MOONRAT_DEBUG: "true"` in the Compose `environment` to force every GIF spawn to moonwalk and display the `MOONRAT` announcement. This makes it easy to test without waiting for the 1% roll. Set it back to `"false"` for normal independent 1% chances. Recreate the container after changing the setting.
+
 Other Compose settings:
 - `TWITCH_CHANNEL`: Twitch channel to monitor.
 - `GIF_QUEUE_INTERVAL_MS`: delay between queued GIF spawns; `0` disables the delay.

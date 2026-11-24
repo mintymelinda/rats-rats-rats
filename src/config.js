@@ -15,6 +15,13 @@ function positiveInteger(value, name, fallback, { min = 1, max = Number.MAX_SAFE
   return parsed;
 }
 
+function parseBoolean(value, name, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new Error(`${name} must be "true" or "false"`);
+}
+
 function parseYOffset(value, keyword) {
   const yOffsetPx = Number(value ?? 0);
   if (!Number.isInteger(yOffsetPx) || yOffsetPx < -10000 || yOffsetPx > 10000) {
@@ -85,6 +92,7 @@ export function loadConfig(env = process.env) {
     channel,
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
     gifQueueIntervalMs: positiveInteger(env.GIF_QUEUE_INTERVAL_MS, "GIF_QUEUE_INTERVAL_MS", 500, { min: 0, max: 60000 }),
+    moonratDebug: parseBoolean(env.MOONRAT_DEBUG, "MOONRAT_DEBUG"),
     mappings: parseMappings(env.GIF_MAPPINGS),
   };
 }
