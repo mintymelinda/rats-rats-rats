@@ -1,3 +1,3 @@
-export function shouldMoonwalk(random = Math.random) {
-  return random() < 0.01;
+export function shouldMoonwalk(random = Math.random, force = false) {
+  return force || random() < 0.01;
 }
