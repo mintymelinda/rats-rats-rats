@@ -18,6 +18,9 @@ for (const mapping of config.mappings) {
   }
 }
 console.info(`Loaded ${config.mappings.length} keyword mapping(s) for #${config.channel}`);
+if (config.moonratDebug) {
+  console.warn("MOONRAT debug mode enabled: every GIF spawn will moonwalk");
+}
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -111,7 +114,7 @@ const irc = new TwitchIrcClient({
         queueIntervalMs: config.gifQueueIntervalMs,
         yOffsetPx: match.yOffsetPx,
         flip: match.flip,
-        moonwalk: shouldMoonwalk(),
+        moonwalk: shouldMoonwalk(Math.random, config.moonratDebug),
       });
     }
   },
