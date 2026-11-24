@@ -7,6 +7,7 @@ test("loads the documented defaults", () => {
   assert.equal(config.channel, "mintymelinda");
   assert.equal(config.port, 3000);
   assert.equal(config.gifQueueIntervalMs, 500);
+  assert.equal(config.moonratDebug, false);
   assert.deepEqual(config.mappings.map(({ keyword, durationMs, scale, yOffsetPx, flip }) => [
     keyword,
     durationMs,
@@ -53,10 +54,13 @@ test("rejects invalid mapping JSON, values, paths, durations, scales, offsets, a
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","flip":"true"}}'), /flip/);
 });
 
-test("validates channel, port, and queue interval", () => {
+test("validates channel, port, queue interval, and MOONRAT debug flag", () => {
   assert.equal(loadConfig({ TWITCH_CHANNEL: "#Example_Channel" }).channel, "example_channel");
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "1250" }).gifQueueIntervalMs, 1250);
   assert.equal(loadConfig({ GIF_QUEUE_INTERVAL_MS: "0" }).gifQueueIntervalMs, 0);
+  assert.equal(loadConfig({ MOONRAT_DEBUG: "true" }).moonratDebug, true);
+  assert.equal(loadConfig({ MOONRAT_DEBUG: "false" }).moonratDebug, false);
+  assert.throws(() => loadConfig({ MOONRAT_DEBUG: "yes" }), /MOONRAT_DEBUG/);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "-1" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ TWITCH_CHANNEL: "not a channel" }), /TWITCH_CHANNEL/);
