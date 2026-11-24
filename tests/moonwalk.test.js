@@ -9,3 +9,8 @@ test("moonwalk chance is exactly one percent", () => {
   assert.equal(shouldMoonwalk(() => 0.5), false);
   assert.equal(shouldMoonwalk(() => 0.999999), false);
 });
+
+test("debug mode forces every spawn to moonwalk", () => {
+  assert.equal(shouldMoonwalk(() => 0.5, true), true);
+  assert.equal(shouldMoonwalk(() => 0.999999, true), true);
+});
