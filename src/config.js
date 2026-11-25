@@ -24,7 +24,7 @@ function parseBoolean(value, name, fallback = false) {
 
 function parseColor(value, name, fallback) {
   const color = value ?? fallback;
-  if (!/^#(?:[\\da-f]{3}|[\\da-f]{4}|[\\da-f]{6}|[\\da-f]{8})$/i.test(color)) {
+  if (!/^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(color)) {
     throw new Error(`${name} must be a 3, 4, 6, or 8 digit hexadecimal color (for example #ff36c8)`);
   }
   return color;
