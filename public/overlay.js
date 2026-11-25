@@ -5,6 +5,7 @@ const reconnectDelayMs = 1500;
 const gifQueue = [];
 const activeGifs = new Set();
 let queueTimer;
+let currentGif;
 let socket;
 
 function connect() {
@@ -24,6 +25,10 @@ function connect() {
       document.documentElement.style.setProperty("--moonrat-glow-color", payload.moonratColors.glow);
     } else if (payload.type === "spawn") {
       enqueueGif(gifQueue, payload);
+      if (payload.moonwalk && currentGif && !currentGif.moonwalk) {
+        window.clearTimeout(queueTimer);
+        queueTimer = undefined;
+      }
       processGifQueue();
     }
   });
@@ -39,6 +44,7 @@ function processGifQueue() {
   if (queueTimer || gifQueue.length === 0) return;
 
   const nextGif = gifQueue.shift();
+  currentGif = nextGif;
   if (nextGif.moonwalk) {
     for (const activeGif of activeGifs) {
       activeGif.remove();
@@ -50,6 +56,7 @@ function processGifQueue() {
 
   queueTimer = window.setTimeout(() => {
     queueTimer = undefined;
+    currentGif = undefined;
     processGifQueue();
   }, getGifQueueDelay(nextGif));
 }
