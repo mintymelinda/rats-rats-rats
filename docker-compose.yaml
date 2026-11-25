@@ -14,6 +14,9 @@ services:
       TWITCH_CHANNEL: "mintymelinda"
       GIF_QUEUE_INTERVAL_MS: "500"
       MOONRAT_DEBUG: "false"
+      MOONRAT_TEXT_COLOR: "#fff36b"
+      MOONRAT_OUTLINE_COLOR: "#a400a8"
+      MOONRAT_GLOW_COLOR: "#fff36b"
       GIF_MAPPINGS: >-
         {
           "mindyfRatNes": {

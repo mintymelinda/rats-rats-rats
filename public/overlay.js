@@ -15,7 +15,11 @@ function connect() {
     } catch {
       return;
     }
-    if (payload.type === "spawn") {
+    if (payload.type === "connected" && payload.moonratColors) {
+      document.documentElement.style.setProperty("--moonrat-text-color", payload.moonratColors.text);
+      document.documentElement.style.setProperty("--moonrat-outline-color", payload.moonratColors.outline);
+      document.documentElement.style.setProperty("--moonrat-glow-color", payload.moonratColors.glow);
+    } else if (payload.type === "spawn") {
       gifQueue.push(payload);
       processGifQueue();
     }
