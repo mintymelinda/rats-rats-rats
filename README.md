@@ -15,7 +15,9 @@ Each entry in `GIF_MAPPINGS` is an object with:
 - `yOffsetPx`: vertical offset in unscaled GIF pixels (default `0`). Positive values move that GIF up; negative values move it down. The offset is multiplied by the GIF's scale, so it remains proportional to the image size. Supported range: `-10000` to `10000`.
 - `flip`: horizontally mirror the GIF (default `false`). Set to `true` to make it face the opposite direction.
 
-For example, each keyword can have its own animation speed, size, vertical placement, and facing direction. Horizontal travel and animation timing remain independent of the vertical offset. Every GIF spawn also has a 1% chance to moonwalk: its horizontal facing is inverted for that spawn, but it still travels left-to-right. The overlay displays a prominent `MOONRAT` announcement when this happens. The announcement text pulses, grows and shrinks, and wiggles for extra emphasis.
+For example, each keyword can have its own animation speed, size, vertical placement, and facing direction. Horizontal travel and animation timing remain independent of the vertical offset. Every GIF spawn also has a 1% chance to moonwalk: its horizontal facing is inverted for that spawn, but it still travels left-to-right. The overlay displays a prominent `MOONRAT` announcement when this happens.
+
+A MOONRAT spawn takes priority over regular queued GIFs. Any regular GIFs already on screen are cleared so MOONRAT has the screen to itself. It plays for its configured `durationMs`, followed by an equally long quiet buffer; regular queued GIFs then resume in their original order. Additional MOONRAT events wait ahead of regular queued GIFs without interrupting the one currently playing.
 
 ### MOONRAT announcement colors
 
