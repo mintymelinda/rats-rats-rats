@@ -51,7 +51,7 @@ function announceMoonrat() {
 
 function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false }) {
   const image = document.createElement("img");
-  image.className = "rat-gif";
+  image.className = moonwalk ? "rat-gif moonrat" : "rat-gif";
   image.alt = "";
   image.draggable = false;
   image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
