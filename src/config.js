@@ -22,6 +22,14 @@ function parseBoolean(value, name, fallback = false) {
   throw new Error(`${name} must be "true" or "false"`);
 }
 
+function parseColor(value, name, fallback) {
+  const color = value ?? fallback;
+  if (!/^#[\da-f]{3}(?:[\da-f]|(?:[\da-f]{2}))?$/i.test(color)) {
+    throw new Error(`${name} must be a 3, 4, 6, or 8 digit hexadecimal color (for example #ff36c8)`);
+  }
+  return color;
+}
+
 function parseYOffset(value, keyword) {
   const yOffsetPx = Number(value ?? 0);
   if (!Number.isInteger(yOffsetPx) || yOffsetPx < -10000 || yOffsetPx > 10000) {
@@ -93,6 +101,11 @@ export function loadConfig(env = process.env) {
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
     gifQueueIntervalMs: positiveInteger(env.GIF_QUEUE_INTERVAL_MS, "GIF_QUEUE_INTERVAL_MS", 500, { min: 0, max: 60000 }),
     moonratDebug: parseBoolean(env.MOONRAT_DEBUG, "MOONRAT_DEBUG"),
+    moonratColors: {
+      text: parseColor(env.MOONRAT_TEXT_COLOR, "MOONRAT_TEXT_COLOR", "#fff36b"),
+      outline: parseColor(env.MOONRAT_OUTLINE_COLOR, "MOONRAT_OUTLINE_COLOR", "#a400a8"),
+      glow: parseColor(env.MOONRAT_GLOW_COLOR, "MOONRAT_GLOW_COLOR", "#fff36b"),
+    },
     mappings: parseMappings(env.GIF_MAPPINGS),
   };
 }
