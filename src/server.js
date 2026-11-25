@@ -47,6 +47,7 @@ function sendFile(response, filePath) {
 const publicFiles = new Map([
   ["/overlay.js", "overlay.js"],
   ["/overlay.css", "overlay.css"],
+  ["/gif-queue.js", "gif-queue.js"],
 ]);
 
 const server = http.createServer((request, response) => {
