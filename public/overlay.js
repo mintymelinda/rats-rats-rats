@@ -15,7 +15,11 @@ function connect() {
     } catch {
       return;
     }
-    if (payload.type === "spawn") {
+    if (payload.type === "connected" && payload.moonratColors) {
+      document.documentElement.style.setProperty("--moonrat-text-color", payload.moonratColors.text);
+      document.documentElement.style.setProperty("--moonrat-outline-color", payload.moonratColors.outline);
+      document.documentElement.style.setProperty("--moonrat-glow-color", payload.moonratColors.glow);
+    } else if (payload.type === "spawn") {
       gifQueue.push(payload);
       processGifQueue();
     }
@@ -51,7 +55,7 @@ function announceMoonrat() {
 
 function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false }) {
   const image = document.createElement("img");
-  image.className = moonwalk ? "rat-gif moonrat" : "rat-gif";
+  image.className = "rat-gif";
   image.alt = "";
   image.draggable = false;
   image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
