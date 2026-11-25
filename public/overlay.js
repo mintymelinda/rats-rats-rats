@@ -1,6 +1,9 @@
+import { enqueueGif, getGifQueueDelay } from "./gif-queue.js";
+
 const overlay = document.querySelector("#overlay");
 const reconnectDelayMs = 1500;
 const gifQueue = [];
+const activeGifs = new Set();
 let queueTimer;
 let socket;
 
@@ -20,7 +23,7 @@ function connect() {
       document.documentElement.style.setProperty("--moonrat-outline-color", payload.moonratColors.outline);
       document.documentElement.style.setProperty("--moonrat-glow-color", payload.moonratColors.glow);
     } else if (payload.type === "spawn") {
-      gifQueue.push(payload);
+      enqueueGif(gifQueue, payload);
       processGifQueue();
     }
   });
@@ -36,12 +39,19 @@ function processGifQueue() {
   if (queueTimer || gifQueue.length === 0) return;
 
   const nextGif = gifQueue.shift();
+  if (nextGif.moonwalk) {
+    for (const activeGif of activeGifs) {
+      activeGif.remove();
+    }
+    activeGifs.clear();
+  }
+
   spawnGif(nextGif);
 
   queueTimer = window.setTimeout(() => {
     queueTimer = undefined;
     processGifQueue();
-  }, Math.max(0, Number(nextGif.queueIntervalMs) || 0));
+  }, getGifQueueDelay(nextGif));
 }
 
 function announceMoonrat() {
@@ -60,11 +70,18 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
   image.draggable = false;
   image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
   image.src = src;
+  activeGifs.add(image);
   overlay.append(image);
+
+  const removeImage = () => {
+    activeGifs.delete(image);
+    image.remove();
+  };
 
   if (moonwalk) announceMoonrat();
 
   image.addEventListener("load", () => {
+    if (!image.isConnected) return;
     const scaledWidth = image.naturalWidth * scale;
     image.style.width = `${image.naturalWidth}px`;
     image.style.height = "auto";
@@ -77,10 +94,10 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
       ],
       { duration: durationMs, easing: "linear", fill: "forwards" },
     );
-    animation.addEventListener("finish", () => image.remove(), { once: true });
+    animation.addEventListener("finish", removeImage, { once: true });
   }, { once: true });
 
-  image.addEventListener("error", () => image.remove(), { once: true });
+  image.addEventListener("error", removeImage, { once: true });
 }
 
 connect();
