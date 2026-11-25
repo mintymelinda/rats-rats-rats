@@ -1,5 +1,8 @@
 :root {
   color-scheme: dark;
+  --moonrat-text-color: #fff36b;
+  --moonrat-outline-color: #a400a8;
+  --moonrat-glow-color: #fff36b;
 }
 
 * {
@@ -37,42 +40,13 @@ body {
   will-change: transform;
 }
 
-.rat-gif.moonrat {
-  transform-origin: center bottom;
-  will-change: transform, rotate, scale;
-  animation: moonrat-hype 900ms ease-in-out infinite;
-}
-
-@keyframes moonrat-hype {
-  0%,
-  100% {
-    rotate: -5deg;
-    scale: 0.9;
-  }
-
-  25% {
-    rotate: 6deg;
-    scale: 1.18;
-  }
-
-  50% {
-    rotate: -7deg;
-    scale: 0.98;
-  }
-
-  75% {
-    rotate: 5deg;
-    scale: 1.14;
-  }
-}
-
 .moonrat-announcement {
   position: absolute;
   z-index: 1000;
   top: 12%;
   left: 50%;
   padding: 0.12em 0.35em;
-  color: #fff36b;
+  color: var(--moonrat-text-color);
   font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
   font-size: clamp(2rem, 8vw, 6rem);
   font-weight: 900;
@@ -81,32 +55,51 @@ body {
   text-align: center;
   white-space: nowrap;
   text-shadow:
-    4px 4px 0 #a400a8,
-    -3px -3px 0 #a400a8,
-    3px -3px 0 #a400a8,
-    -3px 3px 0 #a400a8,
-    0 0 24px rgb(255 243 107 / 75%);
-  transform: translateX(-50%) rotate(-5deg) scale(0.2);
-  animation: moonrat-announcement 2.5s ease-out forwards;
+    4px 4px 0 var(--moonrat-outline-color),
+    -3px -3px 0 var(--moonrat-outline-color),
+    3px -3px 0 var(--moonrat-outline-color),
+    -3px 3px 0 var(--moonrat-outline-color),
+    0 0 24px var(--moonrat-glow-color);
+  transform: translateX(-50%) rotate(-12deg) scale(0.15);
+  animation: moonrat-announcement 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  will-change: transform, opacity;
 }
 
 @keyframes moonrat-announcement {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) rotate(-12deg) scale(0.15);
+  }
+
   12% {
     opacity: 1;
-    transform: translateX(-50%) rotate(-5deg) scale(1.15);
+    transform: translateX(-50%) rotate(10deg) scale(1.4);
   }
 
-  25% {
-    transform: translateX(-50%) rotate(3deg) scale(1);
+  22% {
+    transform: translateX(-50%) rotate(-9deg) scale(0.9);
   }
 
-  78% {
+  32% {
+    transform: translateX(-50%) rotate(7deg) scale(1.2);
+  }
+
+  42% {
+    transform: translateX(-50%) rotate(-5deg) scale(1.05);
+  }
+
+  52%,
+  68% {
     opacity: 1;
-    transform: translateX(-50%) rotate(3deg) scale(1);
+    transform: translateX(-50%) rotate(4deg) scale(1.12);
+  }
+
+  76% {
+    transform: translateX(-50%) rotate(-4deg) scale(1.05);
   }
 
   100% {
     opacity: 0;
-    transform: translateX(-50%) rotate(3deg) scale(0.85);
+    transform: translateX(-50%) rotate(3deg) scale(0.8);
   }
 }
