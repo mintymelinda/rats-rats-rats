@@ -37,6 +37,35 @@ body {
   will-change: transform;
 }
 
+.rat-gif.moonrat {
+  transform-origin: center bottom;
+  will-change: transform, rotate, scale;
+  animation: moonrat-hype 900ms ease-in-out infinite;
+}
+
+@keyframes moonrat-hype {
+  0%,
+  100% {
+    rotate: -5deg;
+    scale: 0.9;
+  }
+
+  25% {
+    rotate: 6deg;
+    scale: 1.18;
+  }
+
+  50% {
+    rotate: -7deg;
+    scale: 0.98;
+  }
+
+  75% {
+    rotate: 5deg;
+    scale: 1.14;
+  }
+}
+
 .moonrat-announcement {
   position: absolute;
   z-index: 1000;
