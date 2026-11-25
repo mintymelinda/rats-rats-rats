@@ -90,7 +90,7 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 webSockets.on("connection", (socket) => {
-  socket.send(JSON.stringify({ type: "connected" }));
+  socket.send(JSON.stringify({ type: "connected", moonratColors: config.moonratColors }));
 });
 
 function broadcast(payload) {
