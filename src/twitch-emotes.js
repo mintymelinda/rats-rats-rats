@@ -1,4 +1,5 @@
 const TWITCH_EMOTE_CDN = "https://static-cdn.jtvnw.net/emoticons/v2";
+const TWITCH_EMOTE_ID = /^(?:\d+|emotesv2_[\da-f]{32})$/i;
 
 export function findTwitchEmote(message, emotesTag, keyword) {
   if (typeof message !== "string" || typeof emotesTag !== "string" || !emotesTag || !keyword) {
@@ -9,7 +10,7 @@ export function findTwitchEmote(message, emotesTag, keyword) {
     const separator = emoteEntry.indexOf(":");
     if (separator <= 0) continue;
     const id = emoteEntry.slice(0, separator);
-    if (!/^\d+$/.test(id)) continue;
+    if (!TWITCH_EMOTE_ID.test(id)) continue;
 
     for (const range of emoteEntry.slice(separator + 1).split(",")) {
       const match = range.match(/^(\d+)-(\d+)$/);
