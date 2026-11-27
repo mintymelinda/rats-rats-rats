@@ -16,19 +16,20 @@ test("recognizes only add and remove command prefixes", () => {
   assert.equal(isMappingCommand("hello !add kintBee"), false);
 });
 
-test("authorized !add parses flipped and scale parameters and persists in manager", () => {
-  const { manager, logger } = setup();
-  const result = handleMappingCommand({
-    username: "MintyMelinda",
-    message: "!add kintBee?flipped=true&scale=4",
-    manager,
-    logger,
+for (const message of [
+  "!add kintBee?flip=true&scale=4&durationMs=8000",
+  "!add kintBee ?flip=true&scale=4&durationMs=8000",
+]) {
+  test(`authorized !add accepts parameters with or without a space before ?: ${message}`, () => {
+    const { manager, logger } = setup();
+    const result = handleMappingCommand({ username: "MintyMelinda", message, manager, logger });
+    assert.equal(result.action, "add");
+    assert.equal(result.mapping.flip, true);
+    assert.equal(result.mapping.scale, 4);
+    assert.equal(result.mapping.durationMs, 8000);
+    assert.equal(manager.mappings.at(-1).keyword, "kintBee");
   });
-  assert.equal(result.action, "add");
-  assert.equal(result.mapping.flip, true);
-  assert.equal(result.mapping.scale, 4);
-  assert.equal(manager.mappings.at(-1).keyword, "kintBee");
-});
+}
 
 test("authorized !add supports defaults and other validated options", () => {
   const { manager, logger } = setup();

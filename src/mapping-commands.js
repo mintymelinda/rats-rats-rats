@@ -14,16 +14,18 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     return { handled: true, authorized: false };
   }
 
-  const match = message.trim().match(/^!(add|remove)\s+(\S+)$/i);
+  const match = message.trim().match(/^!(add|remove)\s+(.+)$/i);
   if (!match) {
-    logger.warn(`Ignored malformed mapping command from ${username}`);
-    return { handled: true, authorized: true, error: "Usage: !add keyword?scale=2&flipped=true or !remove keyword" };
+    logger.warn("Ignored malformed mapping command from " + username);
+    return { handled: true, authorized: true, error: "Usage: !add keyword ?scale=2&flip=true or !remove keyword" };
   }
 
-  const [, action, argument] = match;
-  const separator = argument.indexOf("?");
-  const keyword = separator === -1 ? argument : argument.slice(0, separator);
-  const query = separator === -1 ? "" : argument.slice(separator + 1);
+  const [, action, rawArgument] = match;
+  // Twitch may separate an emote token from the following query string with a space.
+  // Accept both "!add keyword?flip=true" and "!add keyword ?flip=true".
+  const separator = rawArgument.indexOf("?");
+  const keyword = (separator === -1 ? rawArgument : rawArgument.slice(0, separator)).trim();
+  const query = separator === -1 ? "" : rawArgument.slice(separator + 1).trim();
   if (!KEYWORD_PATTERN.test(keyword)) {
     return { handled: true, authorized: true, error: "Keyword must contain 1–64 letters, numbers, or underscores" };
   }
@@ -32,16 +34,16 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     if (action.toLowerCase() === "remove") {
       if (separator !== -1) throw new Error("!remove accepts only a keyword");
       const removed = manager.remove(keyword);
-      logger.info(`Removed GIF mapping "${removed}" at chat request of ${username}`);
+      logger.info("Removed GIF mapping \"" + removed + "\" at chat request of " + username);
       return { handled: true, authorized: true, action: "remove", keyword: removed };
     }
 
     const settings = { durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false };
     const params = new URLSearchParams(query);
     for (const key of params.keys()) {
-      if (!ALLOWED_PARAMETERS.has(key)) throw new Error(`Unknown parameter "${key}"`);
+      if (!ALLOWED_PARAMETERS.has(key)) throw new Error("Unknown parameter \"" + key + "\"");
       if ([...params.keys()].filter((candidate) => candidate === key).length > 1) {
-        throw new Error(`Parameter "${key}" was specified more than once`);
+        throw new Error("Parameter \"" + key + "\" was specified more than once");
       }
     }
     if (params.has("scale")) settings.scale = Number(params.get("scale"));
@@ -61,10 +63,10 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     parseMappings({ [keyword]: settings });
 
     const mapping = manager.add(keyword, settings);
-    logger.info(`Added GIF mapping "${keyword}" (${JSON.stringify(settings)}) at chat request of ${username}`);
+    logger.info("Added GIF mapping \"" + keyword + "\" (" + JSON.stringify(settings) + ") at chat request of " + username);
     return { handled: true, authorized: true, action: "add", keyword, mapping };
   } catch (error) {
-    logger.warn(`Mapping command rejected from ${username}: ${error.message}`);
+    logger.warn("Mapping command rejected from " + username + ": " + error.message);
     return { handled: true, authorized: true, error: error.message };
   }
 }
