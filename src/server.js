@@ -7,6 +7,7 @@ import { loadConfig } from "./config.js";
 import { findMatches } from "./matcher.js";
 import { shouldMoonwalk } from "./moonwalk.js";
 import { findTwitchEmote } from "./twitch-emotes.js";
+import { getDebugMoonratKeyword } from "./debug-moonrat.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -106,8 +107,13 @@ function broadcast(payload) {
 
 const irc = new TwitchIrcClient({
   channel: config.channel,
-  onMessage(message, tags) {
-    for (const match of findMatches(message, config.mappings)) {
+  onMessage(message, tags, username) {
+    const debugKeyword = getDebugMoonratKeyword(username, message);
+    const matches = debugKeyword
+      ? config.mappings.filter((mapping) => mapping.normalizedKeyword === debugKeyword.toLocaleLowerCase("en-US"))
+      : findMatches(message, config.mappings);
+
+    for (const match of matches) {
       const src = match.exists
         ? match.path
         : findTwitchEmote(message, tags.emotes, match.keyword)?.src;
@@ -123,7 +129,7 @@ const irc = new TwitchIrcClient({
         yOffsetPx: match.yOffsetPx,
         flip: match.flip,
         moonratText: match.moonratText,
-        moonwalk: shouldMoonwalk(Math.random, config.moonratDebug),
+        moonwalk: debugKeyword ? true : shouldMoonwalk(Math.random, config.moonratDebug),
       });
     }
   },

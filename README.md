@@ -41,3 +41,13 @@ Other Compose settings:
 - `TWITCH_CHANNEL`: Twitch channel to monitor.
 - `GIF_QUEUE_INTERVAL_MS`: delay between queued spawns; `0` disables the delay.
 - `PORT` and the published port mapping: container and host HTTP ports.
+
+
+## Authorized MOONRAT debug commands
+
+These exact chat messages force the configured NES rat animation to moonwalk, bypassing the normal 1% chance:
+
+- `MintyMelinda`: `debugMoonRatmindyfRatNes`
+- `PYOSHI`: `debugMoonRatmindfRatNes`
+
+The sender and full message must match; other users, extra text, or altered command spelling do not trigger the debug spawn.
