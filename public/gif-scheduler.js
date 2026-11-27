@@ -10,7 +10,6 @@ export function createGifScheduler({
   onMoonratStageChange = () => {},
 }) {
   let regularTimer;
-  let bufferTimer;
   let moonratStageActive = false;
 
   function startMoonratStage(gif) {
@@ -27,8 +26,7 @@ export function createGifScheduler({
     const finishDisplay = () => {
       if (completed) return;
       completed = true;
-      bufferTimer = setTimer(() => {
-        bufferTimer = undefined;
+      setTimer(() => {
         moonratStageActive = false;
         onMoonratStageChange(false);
         processQueue();
