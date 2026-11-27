@@ -28,7 +28,7 @@ Supported `!add` query parameters:
 
 URL-encode spaces or special characters in parameter values. Emote-only mappings need no local GIF file: the server resolves the keyword through its emote registry.
 
-The server applies changes immediately. No container restart or browser-source refresh is required for new chat messages to use the updated mappings.
+The server applies changes immediately. When an emote-only mapping is added or updated, it also searches the public provider catalogs immediately; if no match is found, it keeps the mapping and learns the emote when someone uses it in chat. No container restart or browser-source refresh is required for new chat messages to use the updated mappings.
 
 ## Emote discovery
 
