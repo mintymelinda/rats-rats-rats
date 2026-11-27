@@ -37,8 +37,8 @@ test("processes asynchronous chat handlers in message order", async () => {
   });
 
   client.handleData(
-    ":viewer!viewer@viewer.tmi.twitch.tv PRIVMSG #example :first\\r\\n" +
-    ":viewer!viewer@viewer.tmi.twitch.tv PRIVMSG #example :second\\r\\n",
+    ":viewer!viewer@viewer.tmi.twitch.tv PRIVMSG #example :first\r\n" +
+    ":viewer!viewer@viewer.tmi.twitch.tv PRIVMSG #example :second\r\n",
   );
   await client.messageQueue;
   assert.deepEqual(processed, ["first", "second"]);
