@@ -8,7 +8,7 @@ GIF mappings are stored in the persistent Docker volume `mappings-data` at `/dat
 
 The following commands are available to the channel owner and the existing authorized account `PYOSHI`:
 
-- `!add kintBee` adds a Twitch-emote-only mapping with the default animation settings.
+- `!add kintBee` adds an emote-only mapping with the default animation settings.
 - `!add kintBee?flipped=true&scale=4` adds the mapping with horizontal flipping and scale 4.
 - `!add kintBee ?flip=true&scale=4&durationMs=8000` also works; the space before `?` is accepted because Twitch may separate an emote from following text.
 - `!remove kintBee` removes the mapping.
