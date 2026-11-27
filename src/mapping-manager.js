@@ -32,15 +32,17 @@ export function createMappingManager({ filePath, initialDefinitions }) {
       return clone(definitions);
     },
     add(keyword, settings) {
-      if (Object.keys(definitions).some((name) => name.toLocaleLowerCase("en-US") === keyword.toLocaleLowerCase("en-US"))) {
-        throw new Error(`"${keyword}" is already mapped`);
-      }
-      const next = { ...definitions, [keyword]: settings };
+      const existing = Object.keys(definitions).find(
+        (name) => name.toLocaleLowerCase("en-US") === keyword.toLocaleLowerCase("en-US"),
+      );
+      // Keep the original keyword casing while replacing its entire settings object.
+      const storedKeyword = existing || keyword;
+      const next = { ...definitions, [storedKeyword]: settings };
       const nextMappings = parseMappings(next);
       persist(next);
       definitions = next;
       mappings = nextMappings;
-      return mappings.find((mapping) => mapping.keyword === keyword);
+      return mappings.find((mapping) => mapping.keyword === storedKeyword);
     },
     remove(keyword) {
       const existing = Object.keys(definitions).find(
