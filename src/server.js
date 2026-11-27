@@ -34,7 +34,7 @@ for (const mapping of config.mappings) {
     const sourceDescription = mapping.path
       ? `GIF not found: ${mapping.path}`
       : "no local GIF configured";
-    console.warn(`No local GIF for keyword "${mapping.keyword}" (${sourceDescription}; will use a matching Twitch emote when available)`);
+    console.warn(`No local GIF for keyword "${mapping.keyword}" (${sourceDescription}; will use a matching emote from the registry when available)`);
   }
 }
 console.info(`Loaded ${config.mappings.length} keyword mapping(s) for #${config.channel}`);
