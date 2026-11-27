@@ -8,6 +8,9 @@ test("loads the documented defaults", () => {
   assert.equal(config.port, 3000);
   assert.equal(config.gifQueueIntervalMs, 500);
   assert.equal(config.moonratDebug, false);
+  assert.equal(config.emoteCacheFile, null);
+  assert.equal(config.twitchClientId, "");
+  assert.equal(config.twitchClientSecret, "");
   assert.deepEqual(config.moonratColors, {
     text: "#fff36b",
     outline: "#a400a8",
@@ -124,4 +127,15 @@ test("validates channel, port, queue interval, MOONRAT debug flag, and announcem
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ TWITCH_CHANNEL: "not a channel" }), /TWITCH_CHANNEL/);
   assert.throws(() => loadConfig({ PORT: "70000" }), /PORT/);
+});
+
+test("loads Twitch application credentials and the emote cache path", () => {
+  const config = loadConfig({
+    TWITCH_CLIENT_ID: "client-id",
+    TWITCH_CLIENT_SECRET: "client-secret",
+    EMOTE_CACHE_FILE: "/data/emote-cache.json",
+  });
+  assert.equal(config.twitchClientId, "client-id");
+  assert.equal(config.twitchClientSecret, "client-secret");
+  assert.equal(config.emoteCacheFile, "/data/emote-cache.json");
 });
