@@ -48,13 +48,12 @@ test("a MOONRAT immediately interrupts regular spawns and clears visible rats", 
   scheduler.enqueue({ keyword: "moonrat", moonwalk: true, durationMs: 8000 });
 
   assert.equal(regularTimer.cancelled, true);
-  assert.deepEqual(calls, [
+  assert.deepEqual(calls.filter((call) => typeof call === "string"), [
     "regular:first",
     "clear-active",
     "stage:true",
     "moonwalk:moonrat",
-    calls[4],
-  ].slice(0, 4));
+  ]);
   assert.equal(typeof calls[4].completeMoonwalk, "function");
   assert.equal(scheduler.moonratStageActive, true);
 });
