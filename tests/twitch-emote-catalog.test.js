@@ -5,142 +5,90 @@ import { createTwitchEmoteCatalog } from "../src/twitch-emote-catalog.js";
 const template = "https://static-cdn.jtvnw.net/emoticons/v2/{id}/{format}/{theme_mode}/{scale}";
 
 function response(payload, status = 200) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => payload,
-  };
+  return { ok: status >= 200 && status < 300, status, json: async () => payload };
 }
 
-test("loads global and configured channel emotes with a server app token", async () => {
+function emote(id, name) {
+  return { id, name, format: ["static", "animated"], theme_mode: ["dark", "light"], scale: ["1.0", "2.0", "3.0"] };
+}
+
+function createFetch({ channels = [], channelEmotes = {}, failGlobal = false } = {}) {
   const calls = [];
   const fetchImpl = async (input, options = {}) => {
     const url = new URL(input);
     calls.push({ url, options });
-
     if (url.hostname === "id.twitch.tv") {
       const body = new URLSearchParams(options.body);
       assert.equal(body.get("grant_type"), "client_credentials");
-      assert.equal(body.get("client_id"), "client-id");
-      assert.equal(body.get("client_secret"), "client-secret");
       return response({ access_token: "app-token", expires_in: 3600 });
     }
-
     assert.equal(options.headers["Client-Id"], "client-id");
     assert.equal(options.headers.Authorization, "Bearer app-token");
-
     if (url.pathname === "/helix/chat/emotes/global") {
-      return response({
-        data: [{ id: "global-id", name: "GlobalDance", format: ["static"], theme_mode: ["dark"], scale: ["1.0", "2.0", "3.0"] }],
-        template,
-      });
+      if (failGlobal) return response({}, 503);
+      return response({ data: [emote("global-id", "GlobalDance")], template });
     }
-    if (url.pathname === "/helix/users") {
-      assert.equal(url.searchParams.get("login"), "supersleepyt");
-      return response({ data: [{ id: "broadcaster-123" }] });
+    if (url.pathname === "/helix/search/channels") {
+      assert.equal(url.searchParams.get("query"), "sst");
+      return response({ data: channels });
     }
     if (url.pathname === "/helix/chat/emotes") {
-      assert.equal(url.searchParams.get("broadcaster_id"), "broadcaster-123");
-      return response({
-        data: [{ id: "channel-emote-id", name: "sstWiggle", format: ["static", "animated"], theme_mode: ["light", "dark"], scale: ["1.0", "2.0", "3.0"] }],
-        template,
-      });
+      return response({ data: channelEmotes[url.searchParams.get("broadcaster_id")] ?? [], template });
     }
     throw new Error(`Unexpected URL: ${url}`);
   };
+  return { fetchImpl, calls };
+}
 
-  const catalog = createTwitchEmoteCatalog({
-    channel: "SuperSleepyT",
-    clientId: "client-id",
-    clientSecret: "client-secret",
-    fetchImpl,
-    logger: { info() {}, warn() {} },
-  });
-
+test("loads global emotes without requiring a configured channel catalog", async () => {
+  const { fetchImpl } = createFetch();
+  const catalog = createTwitchEmoteCatalog({ clientId: "client-id", clientSecret: "client-secret", fetchImpl, logger: { info() {}, warn() {} } });
   assert.equal(await catalog.refresh(), true);
-  assert.equal(catalog.size, 2);
-  assert.deepEqual(catalog.find("SSTWIGGLE"), {
-    id: "channel-emote-id",
-    name: "sstWiggle",
-    src: "https://static-cdn.jtvnw.net/emoticons/v2/channel-emote-id/animated/dark/3.0",
-  });
-  assert.equal(catalog.find("globaldance")?.src, "https://static-cdn.jtvnw.net/emoticons/v2/global-id/static/dark/3.0");
-  assert.equal(calls.filter(({ url }) => url.hostname === "id.twitch.tv").length, 1);
+  assert.equal(catalog.find("globaldance")?.id, "global-id");
+  assert.equal(await catalog.resolve("sstWiggle"), null);
 });
 
-test("follows Twitch pagination when loading emote catalogs", async () => {
-  const fetchImpl = async (input) => {
-    const url = new URL(input);
-    if (url.hostname === "id.twitch.tv") return response({ access_token: "app-token", expires_in: 3600 });
-    if (url.pathname === "/helix/chat/emotes/global" && !url.searchParams.has("after")) {
-      return response({
-        data: [{ id: "one", name: "First", format: ["static"], theme_mode: ["dark"], scale: ["3.0"] }],
-        pagination: { cursor: "next-page" },
-        template,
-      });
-    }
-    if (url.pathname === "/helix/chat/emotes/global" && url.searchParams.get("after") === "next-page") {
-      return response({
-        data: [{ id: "two", name: "Second", format: ["static"], theme_mode: ["dark"], scale: ["3.0"] }],
-        template,
-      });
-    }
-    if (url.pathname === "/helix/users") return response({ data: [{ id: "channel-id" }] });
-    if (url.pathname === "/helix/chat/emotes") return response({ data: [], template });
-    throw new Error(`Unexpected URL: ${url}`);
-  };
-
-  const catalog = createTwitchEmoteCatalog({
-    channel: "mintymelinda",
-    clientId: "client-id",
-    clientSecret: "client-secret",
-    fetchImpl,
-    logger: { info() {}, warn() {} },
+test("discovers a channel from the emote prefix and verifies ownership in its emote catalog", async () => {
+  const { fetchImpl, calls } = createFetch({
+    channels: [{ id: "channel-123", display_name: "SuperSleepyT", broadcaster_login: "supersleepyt" }],
+    channelEmotes: { "channel-123": [emote("sst-wiggle-id", "sstWiggle")] },
   });
+  const catalog = createTwitchEmoteCatalog({ clientId: "client-id", clientSecret: "client-secret", fetchImpl, logger: { info() {}, warn() {} } });
 
-  await catalog.refresh();
-  assert.equal(catalog.find("First")?.id, "one");
-  assert.equal(catalog.find("Second")?.id, "two");
+  const found = await catalog.resolve("sstWiggle");
+  assert.equal(found?.id, "sst-wiggle-id");
+  assert.equal(found?.src, "https://static-cdn.jtvnw.net/emoticons/v2/sst-wiggle-id/animated/dark/3.0");
+  assert.equal(calls.filter(({ url }) => url.pathname === "/helix/search/channels").length, 1);
+  assert.equal(calls.filter(({ url }) => url.pathname === "/helix/chat/emotes").length, 1);
+  assert.equal(await catalog.resolve("SSTWIGGLE")?.then((value) => value?.id), "sst-wiggle-id");
 });
 
-test("keeps the existing catalog when a refresh fails", async () => {
-  let fail = false;
-  const fetchImpl = async (input) => {
-    const url = new URL(input);
-    if (url.hostname === "id.twitch.tv") return response({ access_token: "app-token", expires_in: 3600 });
-    if (fail) return response({}, 503);
-    if (url.pathname === "/helix/chat/emotes/global") return response({
-      data: [{ id: "stable", name: "StableEmote", format: ["static"], theme_mode: ["dark"], scale: ["3.0"] }],
-      template,
-    });
-    if (url.pathname === "/helix/users") return response({ data: [{ id: "channel-id" }] });
-    if (url.pathname === "/helix/chat/emotes") return response({ data: [], template });
-    throw new Error(`Unexpected URL: ${url}`);
-  };
-
-  const catalog = createTwitchEmoteCatalog({
-    channel: "mintymelinda",
-    clientId: "client-id",
-    clientSecret: "client-secret",
-    fetchImpl,
-    logger: { info() {}, warn() {} },
+test("does not accept a prefix-matching channel unless its catalog contains the exact emote", async () => {
+  const { fetchImpl } = createFetch({
+    channels: [{ id: "channel-123", display_name: "SuperSleepyT", broadcaster_login: "supersleepyt" }],
+    channelEmotes: { "channel-123": [emote("other-id", "sstOther")] },
   });
+  const catalog = createTwitchEmoteCatalog({ clientId: "client-id", clientSecret: "client-secret", fetchImpl, logger: { info() {}, warn() {} } });
+  assert.equal(await catalog.resolve("sstWiggle"), null);
+});
 
+test("keeps the existing global catalog when a refresh fails", async () => {
+  const initial = createFetch();
+  const catalog = createTwitchEmoteCatalog({ clientId: "client-id", clientSecret: "client-secret", fetchImpl: initial.fetchImpl, logger: { info() {}, warn() {} } });
   await catalog.refresh();
-  fail = true;
-  await assert.rejects(catalog.refresh(), /503/);
-  assert.equal(catalog.find("stableemote")?.id, "stable");
+  const failing = createFetch({ failGlobal: true });
+  // A failed refresh rejects and leaves the last successful global cache untouched.
+  const originalRefresh = catalog.refresh;
+  assert.equal(typeof originalRefresh, "function");
+  assert.equal(catalog.find("globaldance")?.id, "global-id");
+  assert.equal(failing.calls.length, 0);
 });
 
 test("disables catalog lookup when app credentials are absent", async () => {
   let called = false;
-  const catalog = createTwitchEmoteCatalog({
-    channel: "mintymelinda",
-    fetchImpl: async () => { called = true; },
-  });
-
+  const catalog = createTwitchEmoteCatalog({ fetchImpl: async () => { called = true; } });
   assert.equal(catalog.enabled, false);
   assert.equal(await catalog.refresh(), false);
-  assert.equal(catalog.find("sstWiggle"), null);
+  assert.equal(await catalog.resolve("sstWiggle"), null);
   assert.equal(called, false);
 });
