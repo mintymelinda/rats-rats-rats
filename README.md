@@ -8,7 +8,7 @@ All runtime configuration lives directly in `docker-compose.yaml`. Edit the serv
 
 Each keyword can have its own animation speed, size, vertical placement, facing direction, and MOONRAT announcement text.
 Each entry in `GIF_MAPPINGS` is an object with:
-- `path`: GIF file path under `/assets/`. If the file is missing, the overlay will try to use the matching Twitch emote when that emote appears in chat.
+- `path` (optional): GIF file path under `/assets/`. Omit this field to use the matching Twitch emote exclusively. If a configured local file is missing, the overlay will also try the matching Twitch emote when that emote appears in chat.
 - `durationMs`: time for that animation to cross the screen in milliseconds (default `8000`, range `250`–`120000`).
 - `scale`: display scale for that animation (default `2`; supported values `1`, `2`, `4`, or `8`).
 - `yOffsetPx`: vertical offset in unscaled image pixels (default `0`). Positive values move that animation up; negative values move it down. The offset is multiplied by the image's scale, so it remains proportional to the image size. Supported range: `-10000` to `10000`.
@@ -27,11 +27,15 @@ GIF_MAPPINGS: >-
     "mindyfDragon": {
       "path": "/assets/dragon.gif",
       "moonratText": "MOON DRAGON!"
+    },
+    "graped4Based": {
+      "durationMs": 4000,
+      "scale": 1
     }
   }
 ```
 
-When a configured keyword's local GIF exists, it is always used. If it is missing, the bot uses the matching Twitch emote ID supplied in that chat message's IRC `emotes` tag. This requires no Twitch OAuth credentials. If Twitch does not identify that exact keyword as an emote in the message, that spawn is silently skipped. Keywords not declared in `GIF_MAPPINGS` are never spawned.
+When a configured keyword's local GIF exists, it is always used. If no local GIF path is configured, or the configured file is missing, the bot uses the matching Twitch emote ID supplied in that chat message's IRC `emotes` tag. This requires no Twitch OAuth credentials. If Twitch does not identify that exact keyword as an emote in the message, that spawn is silently skipped. Keywords not declared in `GIF_MAPPINGS` are never spawned.
 
 ## MOONRAT takeover
 
@@ -41,7 +45,6 @@ Other Compose settings:
 - `TWITCH_CHANNEL`: Twitch channel to monitor.
 - `GIF_QUEUE_INTERVAL_MS`: delay between queued spawns; `0` disables the delay.
 - `PORT` and the published port mapping: container and host HTTP ports.
-
 
 ## Authorized MOONRAT debug commands
 
