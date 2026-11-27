@@ -137,6 +137,19 @@ const irc = new TwitchIrcClient({
       if (command.action) {
         config.mappings = mappingManager.mappings;
         broadcast({ type: "mappings-updated", keywords: config.mappings.map(({ keyword }) => keyword) });
+        if (command.action === "add" || command.action === "update") {
+          const mapping = config.mappings.find(
+            (item) => item.normalizedKeyword === command.keyword.toLocaleLowerCase("en-US"),
+          );
+          if (mapping && !mapping.exists) {
+            const discovered = emoteRegistry.get(mapping.keyword) || await emoteRegistry.resolve(mapping.keyword);
+            if (discovered) {
+              console.info(`Resolved emote mapping "${mapping.keyword}" through ${discovered.provider}`);
+            } else {
+              console.info(`Saved emote mapping "${mapping.keyword}"; waiting for a matching emote to be observed in chat`);
+            }
+          }
+        }
       }
       return;
     }
