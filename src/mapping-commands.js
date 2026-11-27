@@ -48,8 +48,14 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     if (params.has("durationMs")) settings.durationMs = Number(params.get("durationMs"));
     if (params.has("yOffsetPx")) settings.yOffsetPx = Number(params.get("yOffsetPx"));
     if (params.has("flipped") && params.has("flip")) throw new Error("Use either flipped or flip, not both");
-    if (params.has("flipped")) settings.flip = params.get("flipped") === "true";
-    if (params.has("flip")) settings.flip = params.get("flip") === "true";
+    if (params.has("flipped")) {
+      if (!["true", "false"].includes(params.get("flipped"))) throw new Error("flipped must be true or false");
+      settings.flip = params.get("flipped") === "true";
+    }
+    if (params.has("flip")) {
+      if (!["true", "false"].includes(params.get("flip"))) throw new Error("flip must be true or false");
+      settings.flip = params.get("flip") === "true";
+    }
     if (params.has("moonratText")) settings.moonratText = params.get("moonratText");
     if (params.has("path")) settings.path = params.get("path");
     parseMappings({ [keyword]: settings });
