@@ -48,6 +48,6 @@ Other Compose settings:
 These exact chat messages force the configured NES rat animation to moonwalk, bypassing the normal 1% chance:
 
 - `MintyMelinda`: `debugMoonRatmindyfRatNes`
-- `PYOSHI`: `debugMoonRatmindfRatNes`
+- `PYOSHI`: `debugMoonRatmindyfRatNes`
 
 The sender and full message must match; other users, extra text, or altered command spelling do not trigger the debug spawn.
