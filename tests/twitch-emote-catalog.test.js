@@ -50,8 +50,7 @@ test("loads global and configured channel emotes with a server app token", async
   };
 
   const catalog = createTwitchEmoteCatalog({
-    channel: "mintymelinda",
-    channels: ["SuperSleepyT"],
+    channel: "SuperSleepyT",
     clientId: "client-id",
     clientSecret: "client-secret",
     fetchImpl,
