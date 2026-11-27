@@ -1,12 +1,25 @@
-import { enqueueGif, getGifQueueDelay } from "./gif-queue.js";
+import { createGifScheduler } from "./gif-scheduler.js";
 
 const overlay = document.querySelector("#overlay");
 const reconnectDelayMs = 1500;
-const gifQueue = [];
 const activeGifs = new Set();
-let queueTimer;
-let currentGif;
 let socket;
+
+function clearActiveGifs() {
+  for (const image of activeGifs) {
+    image.remove();
+  }
+  activeGifs.clear();
+}
+
+const gifScheduler = createGifScheduler({
+  clearActiveGifs,
+  spawnRegularGif: (gif) => spawnGif(gif),
+  spawnMoonwalkGif: (gif, onDisplayComplete) => spawnGif(gif, onDisplayComplete),
+  onMoonratStageChange(active) {
+    overlay.classList.toggle("moonrat-stage", active);
+  },
+});
 
 function connect() {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -24,12 +37,7 @@ function connect() {
       document.documentElement.style.setProperty("--moonrat-outline-color", payload.moonratColors.outline);
       document.documentElement.style.setProperty("--moonrat-glow-color", payload.moonratColors.glow);
     } else if (payload.type === "spawn") {
-      enqueueGif(gifQueue, payload);
-      if (payload.moonwalk && currentGif && !currentGif.moonwalk) {
-        window.clearTimeout(queueTimer);
-        queueTimer = undefined;
-      }
-      processGifQueue();
+      gifScheduler.enqueue(payload);
     }
   });
 
@@ -40,39 +48,18 @@ function connect() {
   socket.addEventListener("error", () => socket.close());
 }
 
-function processGifQueue() {
-  if (queueTimer || gifQueue.length === 0) return;
-
-  const nextGif = gifQueue.shift();
-  currentGif = nextGif;
-  if (nextGif.moonwalk) {
-    for (const activeGif of activeGifs) {
-      activeGif.remove();
-    }
-    activeGifs.clear();
-  }
-
-  spawnGif(nextGif);
-
-  queueTimer = window.setTimeout(() => {
-    queueTimer = undefined;
-    currentGif = undefined;
-    processGifQueue();
-  }, getGifQueueDelay(nextGif));
-}
-
-function announceMoonrat() {
+function announceMoonrat(text) {
   const announcement = document.createElement("div");
   announcement.className = "moonrat-announcement";
-  announcement.textContent = "MOONRAT";
+  announcement.textContent = text || "MOONRAT";
   announcement.setAttribute("aria-hidden", "true");
   overlay.append(announcement);
   announcement.addEventListener("animationend", () => announcement.remove(), { once: true });
 }
 
-function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false }) {
+function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false, moonratText }, onDisplayComplete) {
   const image = document.createElement("img");
-  image.className = "rat-gif";
+  image.className = moonwalk ? "rat-gif moonrat-gif" : "rat-gif";
   image.alt = "";
   image.draggable = false;
   image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
@@ -80,15 +67,22 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
   activeGifs.add(image);
   overlay.append(image);
 
-  const removeImage = () => {
+  let completed = false;
+  const completeDisplay = () => {
+    if (completed) return;
+    completed = true;
     activeGifs.delete(image);
     image.remove();
+    onDisplayComplete?.();
   };
 
-  if (moonwalk) announceMoonrat();
+  if (moonwalk) announceMoonrat(moonratText);
 
   image.addEventListener("load", () => {
-    if (!image.isConnected) return;
+    if (!image.isConnected) {
+      if (moonwalk) completeDisplay();
+      return;
+    }
     const scaledWidth = image.naturalWidth * scale;
     image.style.width = `${image.naturalWidth}px`;
     image.style.height = "auto";
@@ -101,10 +95,16 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
       ],
       { duration: durationMs, easing: "linear", fill: "forwards" },
     );
-    animation.addEventListener("finish", removeImage, { once: true });
+    animation.addEventListener("finish", completeDisplay, { once: true });
   }, { once: true });
 
-  image.addEventListener("error", removeImage, { once: true });
+  image.addEventListener("error", () => {
+    if (moonwalk) completeDisplay();
+    else {
+      activeGifs.delete(image);
+      image.remove();
+    }
+  }, { once: true });
 }
 
 connect();
