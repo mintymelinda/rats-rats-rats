@@ -14,6 +14,10 @@ Each entry in `GIF_MAPPINGS` is an object with:
 - `yOffsetPx`: vertical offset in unscaled GIF pixels (default `0`). Positive values move that GIF up; negative values move it down. The offset is multiplied by the GIF's scale, so it remains proportional to the image size. Supported range: `-10000` to `10000`.
 - `flip`: horizontally mirror the GIF (default `false`). Set to `true` to make it face the opposite direction.
 
+## MOONRAT takeover
+
+A moonwalk-triggered GIF immediately takes over the overlay: all currently visible regular GIFs are cleared, and no regular GIFs spawn during its solo animation. After the moonwalking GIF finishes, the overlay stays empty for an additional buffer equal to that GIF's configured `durationMs`. Queued regular GIFs then resume in their original order. Additional moonwalk events wait ahead of regular GIFs.
+
 Other Compose settings:
 - `TWITCH_CHANNEL`: Twitch channel to monitor.
 - `GIF_QUEUE_INTERVAL_MS`: delay between queued GIF spawns; `0` disables the delay.
