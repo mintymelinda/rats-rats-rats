@@ -7,7 +7,7 @@ import { loadConfig } from "./config.js";
 import { findMatchesWithPositions } from "./matcher.js";
 import { shouldMoonwalk } from "./moonwalk.js";
 import { findTwitchEmote } from "./twitch-emotes.js";
-import { filterDebugMoonratKeywordMatch, findDebugMoonratCommand } from "./debug-moonrat.js";
+import { filterDebugMoonratKeywordMatch, findDebugMoonratCommands } from "./debug-moonrat.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -108,10 +108,10 @@ function broadcast(payload) {
 const irc = new TwitchIrcClient({
   channel: config.channel,
   onMessage(message, tags, username) {
-    const debugCommand = findDebugMoonratCommand(username, message, config.mappings);
+    const debugCommands = findDebugMoonratCommands(username, message, config.mappings);
     let events = findMatchesWithPositions(message, config.mappings);
-    events = filterDebugMoonratKeywordMatch(events, debugCommand);
-    if (debugCommand) {
+    events = filterDebugMoonratKeywordMatch(events, debugCommands);
+    for (const debugCommand of debugCommands) {
       const mappingIndex = config.mappings.findIndex(
         (mapping) => mapping.normalizedKeyword === debugCommand.keyword.toLocaleLowerCase("en-US"),
       );
