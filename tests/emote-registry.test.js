@@ -36,7 +36,9 @@ test("loads Twitch global and monitored-channel catalogs using an app access tok
     if (url.endsWith("/chat/emotes?broadcaster_id=42")) {
       return response({ data: [{ id: "2", name: "ChannelRat", template: "https://cdn.test/{{id}}/{{format}}/{{theme_mode}}/{{scale}", format: ["animated"] }] });
     }
-    if (url.includes("7tv.io") || url.includes("betterttv.net") || url.includes("frankerfacez.com")) return response({ data: [], emotes: [], sets: {} });
+    if (url.includes("7tv.io")) return response({ emotes: [] });
+    if (url.includes("betterttv.net")) return response(url.includes("/cached/emotes/global") ? [] : { channelEmotes: [], sharedEmotes: [] });
+    if (url.includes("frankerfacez.com")) return response({ sets: {} });
     throw new Error(`Unexpected URL: ${url}`);
   };
   const registry = createEmoteRegistry({
