@@ -1,5 +1,5 @@
 import { createGifScheduler } from "./gif-scheduler.js";
-import { getHorizontalTravel } from "./gif-motion.js";
+import { getHorizontalTravel, getSpawnSpacingMs } from "./gif-motion.js";
 import { createAlternatingGifDepth } from "./gif-depth.js";
 
 const overlay = document.querySelector("#overlay");
@@ -9,7 +9,7 @@ const nextGifDepth = createAlternatingGifDepth();
 let socket;
 
 const gifScheduler = createGifScheduler({
-  spawnRegularGif: (gif, onDisplayComplete) => spawnGif(gif, onDisplayComplete),
+  spawnRegularGif: (gif, onDisplayComplete, onSpawnReady) => spawnGif(gif, onDisplayComplete, onSpawnReady),
   spawnMoonwalkGif: (gif, onDisplayComplete) => spawnGif(gif, onDisplayComplete),
   onMoonratStageChange(active) {
     overlay.classList.toggle("moonrat-stage", active);
@@ -53,7 +53,7 @@ function announceMoonrat(text, durationMs) {
   announcement.addEventListener("animationend", () => announcement.remove(), { once: true });
 }
 
-function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false, moonratText }, onDisplayComplete) {
+function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false, moonratText, queueIntervalMs }, onDisplayComplete, onSpawnReady) {
   const image = document.createElement("img");
   image.className = `rat-gif rat-gif--${nextGifDepth()}${moonwalk ? " moonrat-gif" : ""}`;
   image.alt = "";
@@ -63,11 +63,19 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
   overlay.append(image);
 
   let completed = false;
+  let spawnReady = false;
+  const notifySpawnReady = (spacingMs) => {
+    if (spawnReady) return;
+    spawnReady = true;
+    onSpawnReady?.(spacingMs);
+  };
   const completeDisplay = () => {
     if (completed) return;
     completed = true;
     activeGifs.delete(image);
     image.remove();
+    // A failed asset must release both the display slot and the FIFO scheduler.
+    notifySpawnReady(0);
     onDisplayComplete?.();
   };
 
@@ -83,11 +91,16 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
     image.style.height = "auto";
 
     const horizontalScale = flip !== moonwalk ? -1 : 1;
+    const viewportWidth = window.innerWidth;
     const { startX, endX } = getHorizontalTravel({
-      viewportWidth: window.innerWidth,
+      viewportWidth,
       scaledWidth,
       flipped: horizontalScale < 0,
     });
+    const measuredSpacing = getSpawnSpacingMs({ viewportWidth, scaledWidth, durationMs });
+    const configuredSpacing = Math.max(0, Number(queueIntervalMs) || 0);
+    notifySpawnReady(Math.max(measuredSpacing, configuredSpacing));
+
     const animation = image.animate(
       [
         { transform: `translateX(${startX}px) scaleX(${horizontalScale}) scale(${scale})` },
