@@ -49,10 +49,14 @@ export function createGifScheduler({
     queue.shift();
     activeRegularGifs += 1;
     spawnRegularGif(nextGif, regularGifFinished);
+    const configuredInterval = nextGif.queueIntervalMs;
+    const queueIntervalMs = configuredInterval === undefined || configuredInterval === null
+      ? 500
+      : Math.max(0, Number(configuredInterval) || 0);
     regularTimer = setTimer(() => {
       regularTimer = undefined;
       processQueue();
-    }, Math.max(0, Number(nextGif.queueIntervalMs) || 0));
+    }, queueIntervalMs);
   }
 
   function enqueue(gif) {

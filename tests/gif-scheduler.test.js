@@ -127,3 +127,15 @@ test("multiple MOONRATs retain their exact FIFO positions among regular GIFs", (
   assert.equal(calls.at(-1), "moonrat:moonrat-2");
   assert.equal(scheduler.moonratStageActive, true);
 });
+
+test("defaults missing queue intervals to 500ms while preserving explicit zero", () => {
+  const { calls, timers, scheduler, runTimer } = createHarness();
+  scheduler.enqueue({ keyword: "default-delay" });
+  scheduler.enqueue({ keyword: "no-delay", queueIntervalMs: 0 });
+
+  assert.deepEqual(calls, ["regular:default-delay"]);
+  assert.equal(timers[0].delay, 500);
+  runTimer(timers[0]);
+  assert.deepEqual(calls, ["regular:default-delay", "regular:no-delay"]);
+  assert.equal(timers[1].delay, 0);
+});
