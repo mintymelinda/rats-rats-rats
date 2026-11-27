@@ -41,7 +41,7 @@ TWITCH_CLIENT_ID=your_twitch_application_client_id
 TWITCH_CLIENT_SECRET=your_twitch_application_client_secret
 ```
 
-Docker Compose passes these values into the container. No channel list or per-channel configuration is required. Twitch channel search is used to discover likely owners from the emote prefix; candidate channels are checked against their actual Helix emote catalogs before an image is accepted.
+Docker Compose passes these values into the container. No channel list or per-channel configuration is required. Twitch channel search is used to discover likely owners from the emote prefix; candidate channels are checked against their actual Helix emote catalogs before an image is accepted. This is best-effort rather than universal: Twitch has no official prefix-to-owner index, and channel search may not return a channel based on initials alone. If the candidate is not surfaced by search, the custom emote cannot be resolved through this path.
 
 The catalog refreshes every 30 minutes. Twitch app access tokens are obtained server-to-server; the registered redirect URL is not used. If the API is temporarily unavailable, the overlay continues running and keeps the last successfully loaded catalog.
 
