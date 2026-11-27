@@ -1,9 +1,11 @@
 import { createGifScheduler } from "./gif-scheduler.js";
 import { getHorizontalTravel } from "./gif-motion.js";
+import { createAlternatingGifDepth } from "./gif-depth.js";
 
 const overlay = document.querySelector("#overlay");
 const reconnectDelayMs = 1500;
 const activeGifs = new Set();
+const nextGifDepth = createAlternatingGifDepth();
 let socket;
 
 const gifScheduler = createGifScheduler({
@@ -53,7 +55,7 @@ function announceMoonrat(text, durationMs) {
 
 function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = false, moonratText }, onDisplayComplete) {
   const image = document.createElement("img");
-  image.className = moonwalk ? "rat-gif moonrat-gif" : "rat-gif";
+  image.className = `rat-gif rat-gif--${nextGifDepth()}${moonwalk ? " moonrat-gif" : ""}`;
   image.alt = "";
   image.draggable = false;
   image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
