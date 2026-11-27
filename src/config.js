@@ -117,6 +117,15 @@ export function loadConfig(env = process.env) {
   }
 
   const mappingDefinitions = parseMappingDefinitions(env.GIF_MAPPINGS || JSON.stringify(DEFAULT_MAPPINGS));
+  const twitchEmoteChannels = (env.TWITCH_EMOTE_CHANNELS || "")
+    .split(",")
+    .map((login) => login.trim().replace(/^#/, "").toLowerCase())
+    .filter(Boolean);
+  const twitchClientId = (env.TWITCH_CLIENT_ID || "").trim();
+  const twitchClientSecret = (env.TWITCH_CLIENT_SECRET || "").trim();
+  if (Boolean(twitchClientId) !== Boolean(twitchClientSecret)) {
+    throw new Error("TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET must both be set to enable the Twitch emote catalog");
+  }
   return {
     channel,
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
@@ -128,6 +137,9 @@ export function loadConfig(env = process.env) {
       glow: parseColor(env.MOONRAT_GLOW_COLOR, "MOONRAT_GLOW_COLOR", "#fff36b"),
     },
     mappingsFile: env.GIF_MAPPINGS_FILE || null,
+    twitchClientId,
+    twitchClientSecret,
+    twitchEmoteChannels,
     mappingDefinitions,
     mappings: parseMappings(mappingDefinitions),
   };
