@@ -5,7 +5,7 @@ const KEYWORD_PATTERN = /^[a-zA-Z0-9_]{1,64}$/;
 const ALLOWED_PARAMETERS = new Set(["scale", "durationMs", "yOffsetPx", "flipped", "flip", "moonratText", "path"]);
 
 export function isMappingCommand(message) {
-  return typeof message === "string" && /^!(?:add|remove)(?:\\s|$)/i.test(message.trim());
+  return typeof message === "string" && /^!(?:add|remove)(?:\s|$)/i.test(message.trim());
 }
 
 export function handleMappingCommand({ username, message, manager, logger = console }) {
@@ -14,9 +14,9 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     return { handled: true, authorized: false };
   }
 
-  const match = message.trim().match(/^!(add|remove)\\s+(.+)$/i);
+  const match = message.trim().match(/^!(add|remove)\s+(.+)$/i);
   if (!match) {
-    logger.warn(`Ignored malformed mapping command from ${username}`);
+    logger.warn(\`Ignored malformed mapping command from \${username}\`);
     return { handled: true, authorized: true, error: "Usage: !add keyword ?scale=2&flip=true or !remove keyword" };
   }
 
@@ -34,16 +34,16 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     if (action.toLowerCase() === "remove") {
       if (separator !== -1) throw new Error("!remove accepts only a keyword");
       const removed = manager.remove(keyword);
-      logger.info(`Removed GIF mapping "${removed}" at chat request of ${username}`);
+      logger.info(\`Removed GIF mapping "\${removed}" at chat request of \${username}\`);
       return { handled: true, authorized: true, action: "remove", keyword: removed };
     }
 
     const settings = { durationMs: 8000, scale: 2, yOffsetPx: 0, flip: false };
     const params = new URLSearchParams(query);
     for (const key of params.keys()) {
-      if (!ALLOWED_PARAMETERS.has(key)) throw new Error(`Unknown parameter "${key}"`);
+      if (!ALLOWED_PARAMETERS.has(key)) throw new Error(\`Unknown parameter "\${key}"\`);
       if ([...params.keys()].filter((candidate) => candidate === key).length > 1) {
-        throw new Error(`Parameter "${key}" was specified more than once`);
+        throw new Error(\`Parameter "\${key}" was specified more than once\`);
       }
     }
     if (params.has("scale")) settings.scale = Number(params.get("scale"));
@@ -63,10 +63,10 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     parseMappings({ [keyword]: settings });
 
     const mapping = manager.add(keyword, settings);
-    logger.info(`Added GIF mapping "${keyword}" (${JSON.stringify(settings)}) at chat request of ${username}`);
+    logger.info(\`Added GIF mapping "\${keyword}" (\${JSON.stringify(settings)}) at chat request of \${username}\`);
     return { handled: true, authorized: true, action: "add", keyword, mapping };
   } catch (error) {
-    logger.warn(`Mapping command rejected from ${username}: ${error.message}`);
+    logger.warn(\`Mapping command rejected from \${username}: \${error.message}\`);
     return { handled: true, authorized: true, error: error.message };
   }
 }
