@@ -6,6 +6,7 @@ import { WebSocketServer } from "ws";
 import { loadConfig } from "./config.js";
 import { findMatches } from "./matcher.js";
 import { shouldMoonwalk } from "./moonwalk.js";
+import { findTwitchEmote } from "./twitch-emotes.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -14,7 +15,7 @@ const config = loadConfig();
 
 for (const mapping of config.mappings) {
   if (!mapping.exists) {
-    console.warn(`GIF for keyword "${mapping.keyword}" not found: ${mapping.path} (will be skipped until the file is added)`);
+    console.warn(`GIF for keyword "${mapping.keyword}" not found: ${mapping.path} (will use a matching Twitch emote when available)`);
   }
 }
 console.info(`Loaded ${config.mappings.length} keyword mapping(s) for #${config.channel}`);
@@ -105,13 +106,17 @@ function broadcast(payload) {
 
 const irc = new TwitchIrcClient({
   channel: config.channel,
-  onMessage(message) {
+  onMessage(message, tags) {
     for (const match of findMatches(message, config.mappings)) {
-      if (!match.exists) continue;
+      const src = match.exists
+        ? match.path
+        : findTwitchEmote(message, tags.emotes, match.keyword)?.src;
+      if (!src) continue;
+
       broadcast({
         type: "spawn",
         keyword: match.keyword,
-        src: match.path,
+        src,
         durationMs: match.durationMs,
         scale: match.scale,
         queueIntervalMs: config.gifQueueIntervalMs,
