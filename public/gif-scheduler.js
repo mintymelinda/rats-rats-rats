@@ -4,48 +4,51 @@ export function createGifScheduler({
   queue = [],
   setTimer = setTimeout,
   clearTimer = clearTimeout,
-  clearActiveGifs,
   spawnRegularGif,
   spawnMoonwalkGif,
   onMoonratStageChange = () => {},
 }) {
   let regularTimer;
+  let activeRegularGifs = 0;
   let moonratStageActive = false;
 
   function startMoonratStage(gif) {
-    if (regularTimer !== undefined) {
-      clearTimer(regularTimer);
-      regularTimer = undefined;
-    }
-
     moonratStageActive = true;
-    clearActiveGifs();
     onMoonratStageChange(true);
 
     let completed = false;
     const finishDisplay = () => {
       if (completed) return;
       completed = true;
-      setTimer(() => {
-        moonratStageActive = false;
-        onMoonratStageChange(false);
-        processQueue();
-      }, gif.durationMs);
+      moonratStageActive = false;
+      onMoonratStageChange(false);
+      processQueue();
     };
 
     spawnMoonwalkGif(gif, finishDisplay);
   }
 
+  function regularGifFinished() {
+    activeRegularGifs = Math.max(0, activeRegularGifs - 1);
+    processQueue();
+  }
+
   function processQueue() {
     if (moonratStageActive || regularTimer !== undefined || queue.length === 0) return;
 
-    const nextGif = queue.shift();
+    const nextGif = queue[0];
     if (nextGif.moonwalk) {
+      // A MOONRAT is a FIFO barrier: don't start it until every earlier
+      // regular GIF has completely left the viewport.
+      if (activeRegularGifs > 0) return;
+      queue.shift();
       startMoonratStage(nextGif);
       return;
     }
 
-    spawnRegularGif(nextGif);
+    queue.shift();
+    activeRegularGifs += 1;
+    spawnRegularGif(nextGif, regularGifFinished);
     regularTimer = setTimer(() => {
       regularTimer = undefined;
       processQueue();
@@ -53,10 +56,6 @@ export function createGifScheduler({
   }
 
   function enqueue(gif) {
-    if (gif.moonwalk && regularTimer !== undefined && !moonratStageActive) {
-      clearTimer(regularTimer);
-      regularTimer = undefined;
-    }
     enqueueGif(queue, gif);
     processQueue();
   }
@@ -65,6 +64,9 @@ export function createGifScheduler({
     enqueue,
     get moonratStageActive() {
       return moonratStageActive;
+    },
+    get activeRegularCount() {
+      return activeRegularGifs;
     },
     get queuedCount() {
       return queue.length;
