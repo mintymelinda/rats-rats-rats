@@ -127,11 +127,15 @@ export function createTwitchEmoteCatalog({
     addEmotes(next, globalEmotes);
 
     for (const login of channelLogins) {
-      const broadcasterId = await getBroadcasterId(login);
-      const url = new URL(`${HELIX_URL}/chat/emotes`);
-      url.searchParams.set("broadcaster_id", broadcasterId);
-      const channelEmotes = await fetchAllPages(url.toString());
-      addEmotes(next, channelEmotes);
+      try {
+        const broadcasterId = await getBroadcasterId(login);
+        const url = new URL(`${HELIX_URL}/chat/emotes`);
+        url.searchParams.set("broadcaster_id", broadcasterId);
+        const channelEmotes = await fetchAllPages(url.toString());
+        addEmotes(next, channelEmotes);
+      } catch (error) {
+        logger.warn(`Unable to load Twitch emotes for #${login}: ${error.message}`);
+      }
     }
 
     emotes = next;
