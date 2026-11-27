@@ -56,7 +56,9 @@ export function createGifScheduler({
       regularTimer = setTimer(() => {
         regularTimer = undefined;
         processQueue();
-      }, Math.max(0, Number(spacingMs) || 0));
+      }, spacingMs === undefined || spacingMs === null
+        ? Math.max(0, Number(nextGif.queueIntervalMs ?? 500) || 0)
+        : Math.max(0, Number(spacingMs) || 0));
     };
 
     // The browser calls onSpawnReady after loading the asset and measuring its
