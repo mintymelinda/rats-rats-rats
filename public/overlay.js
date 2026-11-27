@@ -49,11 +49,12 @@ function connect() {
   socket.addEventListener("error", () => socket.close());
 }
 
-function announceMoonrat(text) {
+function announceMoonrat(text, durationMs) {
   const announcement = document.createElement("div");
   announcement.className = "moonrat-announcement";
   announcement.textContent = text || "MOONRAT";
   announcement.setAttribute("aria-hidden", "true");
+  announcement.style.setProperty("--moonrat-duration", `${durationMs}ms`);
   overlay.append(announcement);
   announcement.addEventListener("animationend", () => announcement.remove(), { once: true });
 }
@@ -77,13 +78,13 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
     onDisplayComplete?.();
   };
 
-  if (moonwalk) announceMoonrat(moonratText);
-
   image.addEventListener("load", () => {
     if (!image.isConnected) {
       if (moonwalk) completeDisplay();
       return;
     }
+    if (moonwalk) announceMoonrat(moonratText, durationMs);
+
     const scaledWidth = image.naturalWidth * scale;
     image.style.width = `${image.naturalWidth}px`;
     image.style.height = "auto";
