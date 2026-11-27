@@ -24,6 +24,7 @@ export class TwitchIrcClient {
     this.stopped = true;
     this.reconnectTimer = null;
     this.reconnectDelay = 1000;
+    this.messageQueue = Promise.resolve();
   }
 
   start() {
@@ -66,7 +67,14 @@ export class TwitchIrcClient {
       const tags = parseTags(line);
       const messageMatch = line.match(/\bPRIVMSG #\S+ :(.*)$/);
       const usernameMatch = line.match(/(?:^| ):([^! ]+)!/);
-      if (messageMatch) this.onMessage(messageMatch[1], { emotes: tags.emotes || "" }, usernameMatch?.[1] || "");
+      if (messageMatch) {
+        const message = messageMatch[1];
+        const messageTags = { emotes: tags.emotes || "" };
+        const username = usernameMatch?.[1] || "";
+        this.messageQueue = this.messageQueue
+          .then(() => this.onMessage(message, messageTags, username))
+          .catch((error) => this.logger.error("Twitch chat message handler failed:", error?.message || error));
+      }
     }
   }
 

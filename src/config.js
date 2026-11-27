@@ -128,6 +128,9 @@ export function loadConfig(env = process.env) {
       glow: parseColor(env.MOONRAT_GLOW_COLOR, "MOONRAT_GLOW_COLOR", "#fff36b"),
     },
     mappingsFile: env.GIF_MAPPINGS_FILE || null,
+    emoteCacheFile: env.EMOTE_CACHE_FILE || null,
+    twitchClientId: (env.TWITCH_CLIENT_ID || "").trim(),
+    twitchClientSecret: (env.TWITCH_CLIENT_SECRET || "").trim(),
     mappingDefinitions,
     mappings: parseMappings(mappingDefinitions),
   };

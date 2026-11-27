@@ -8,7 +8,7 @@ GIF mappings are stored in the persistent Docker volume `mappings-data` at `/dat
 
 The following commands are available to the channel owner and the existing authorized account `PYOSHI`:
 
-- `!add kintBee` adds a Twitch-emote-only mapping with the default animation settings.
+- `!add kintBee` adds an emote-only mapping with the default animation settings.
 - `!add kintBee?flipped=true&scale=4` adds the mapping with horizontal flipping and scale 4.
 - `!add kintBee ?flip=true&scale=4&durationMs=8000` also works; the space before `?` is accepted because Twitch may separate an emote from following text.
 - `!remove kintBee` removes the mapping.
@@ -26,9 +26,28 @@ Supported `!add` query parameters:
 | `moonratText` | inferred from keyword | non-empty text up to 40 characters |
 | `path` | none | optional GIF path under `/assets/` |
 
-URL-encode spaces or special characters in parameter values. Twitch emote-only mappings need no local GIF file: the server resolves the emote ID from Twitch IRC tags when that keyword appears as an emote in chat.
+URL-encode spaces or special characters in parameter values. Emote-only mappings need no local GIF file: the server resolves the keyword through its emote registry.
 
 The server applies changes immediately. No container restart or browser-source refresh is required for new chat messages to use the updated mappings.
+
+## Emote discovery
+
+The registry uses several evidence sources instead of guessing an emote owner from its spelling:
+
+1. Twitch global emotes and the monitored channel's Twitch emotes, loaded with an app access token.
+2. 7TV, BetterTTV, and FrankerFaceZ global catalogs, plus channel catalogs where their public APIs expose them. Provider search is exact-name checked before a result is accepted.
+3. Every Twitch emote explicitly identified in an incoming IRC `emotes` tag is learned by its exact name and ID. These discoveries are saved in `/data/emote-cache.json`, so an emote used by any viewer in chat can be resolved later even if the anonymous bot account cannot itself use that emote.
+
+Put the Twitch application credentials you already created in the project `.env` file:
+
+```dotenv
+TWITCH_CLIENT_ID=your_twitch_application_client_id
+TWITCH_CLIENT_SECRET=your_twitch_application_client_secret
+```
+
+Compose passes these values into the container. No redirect URL, user login, or recurring viewer authorization is needed; the app uses Twitch's client-credentials flow. If credentials are absent, observed IRC emotes and third-party catalogs still work.
+
+Twitch does not provide a public endpoint that can find every custom Twitch emote from an arbitrary name. A private subscriber emote from an unrelated channel cannot be discovered until someone who can use it posts it in the monitored chat (or it is found through a third-party provider). The resolver deliberately avoids inferring an owner from keyword prefixes.
 
 ## Static configuration
 
@@ -39,9 +58,11 @@ Runtime settings remain in `docker-compose.yaml`:
 - `MOONRAT_DEBUG`: force every GIF spawn to moonwalk when set to `true`.
 - `MOONRAT_TEXT_COLOR`, `MOONRAT_OUTLINE_COLOR`, `MOONRAT_GLOW_COLOR`: announcement colors.
 - `GIF_MAPPINGS_FILE`: path to the persistent JSON mapping file (default in Compose: `/data/gif-mappings.json`).
+- `EMOTE_CACHE_FILE`: path to the persistent learned-emote cache (default in Compose: `/data/emote-cache.json`).
+- `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`: Twitch application credentials, supplied to Compose from `.env` for official global/channel catalogs.
 - `GIF_MAPPINGS`: initial seed data only; edits after first startup are stored in the JSON file.
 
-Existing mapping settings remain supported: `path` (optional), `durationMs`, `scale`, `yOffsetPx`, `flip`, and `moonratText`. If a configured local GIF exists it is used; otherwise the server falls back to the matching Twitch emote ID from the message's IRC `emotes` tag.
+Existing mapping settings remain supported: `path` (optional), `durationMs`, `scale`, `yOffsetPx`, `flip`, and `moonratText`. If a configured local GIF exists it is used first. Otherwise, emote resolution checks the current IRC message, the persistent learned-emote cache, and the in-memory catalogs.
 
 ## MOONRAT behavior
 

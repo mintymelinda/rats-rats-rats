@@ -9,6 +9,7 @@ import { handleMappingCommand } from "./mapping-commands.js";
 import { findMatchesWithPositions } from "./matcher.js";
 import { shouldMoonwalk } from "./moonwalk.js";
 import { findTwitchEmote } from "./twitch-emotes.js";
+import { createEmoteRegistry } from "./emote-registry.js";
 import { filterDebugMoonratKeywordMatch, findDebugMoonratCommands } from "./debug-moonrat.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
@@ -20,13 +21,20 @@ const mappingManager = createMappingManager({
   initialDefinitions: config.mappingDefinitions,
 });
 config.mappings = mappingManager.mappings;
+const emoteRegistry = createEmoteRegistry({
+  cacheFile: config.emoteCacheFile,
+  channel: config.channel,
+  clientId: config.twitchClientId,
+  clientSecret: config.twitchClientSecret,
+});
+void emoteRegistry.initialize();
 
 for (const mapping of config.mappings) {
   if (!mapping.exists) {
     const sourceDescription = mapping.path
       ? `GIF not found: ${mapping.path}`
       : "no local GIF configured";
-    console.warn(`No local GIF for keyword "${mapping.keyword}" (${sourceDescription}; will use a matching Twitch emote when available)`);
+    console.warn(`No local GIF for keyword "${mapping.keyword}" (${sourceDescription}; will use a matching emote from the registry when available)`);
   }
 }
 console.info(`Loaded ${config.mappings.length} keyword mapping(s) for #${config.channel}`);
@@ -119,7 +127,10 @@ function broadcast(payload) {
 
 const irc = new TwitchIrcClient({
   channel: config.channel,
-  onMessage(message, tags, username) {
+  async onMessage(message, tags, username) {
+    // Twitch marks actual emote tokens in IRC tags; learn every one before
+    // handling commands so an emote used in !add can be cached immediately.
+    emoteRegistry.learnFromIrc(message, tags.emotes);
     const command = handleMappingCommand({ username, message, manager: mappingManager });
     if (command.handled) {
       if (command.error) console.warn(`Mapping command from ${username}: ${command.error}`);
@@ -151,9 +162,12 @@ const irc = new TwitchIrcClient({
     events.sort((a, b) => a.index - b.index || a.mappingIndex - b.mappingIndex);
     for (const event of events) {
       const match = event.mapping;
-      const src = match.exists
-        ? match.path
-        : findTwitchEmote(message, tags.emotes, match.keyword)?.src;
+      let src = match.exists ? match.path : null;
+      if (!src) {
+        src = findTwitchEmote(message, tags.emotes, match.keyword)?.src
+          || emoteRegistry.get(match.keyword)?.src
+          || (await emoteRegistry.resolve(match.keyword))?.src;
+      }
       if (!src) continue;
 
       broadcast({

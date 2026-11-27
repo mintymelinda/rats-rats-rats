@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { TwitchIrcClient } from "../src/twitch-irc.js";
 
-test("extracts chat text, emote tags, and sender from Twitch IRC PRIVMSG lines", () => {
+test("extracts chat text, emote tags, and sender from Twitch IRC PRIVMSG lines", async () => {
   const messages = [];
   const client = new TwitchIrcClient({
     channel: "example",
@@ -15,9 +15,31 @@ test("extracts chat text, emote tags, and sender from Twitch IRC PRIVMSG lines",
     ":PYOSHI!pyoshi@pyoshi.tmi.twitch.tv PRIVMSG #example :debugMoonRatmindfRatNes\r\n",
   );
 
+  await client.messageQueue;
   assert.deepEqual(messages, [
     { message: "Kappa rats", tags: { emotes: "25:0-4" }, username: "MintyMelinda" },
     { message: "debugMoonRatmindfRatNes", tags: { emotes: "" }, username: "PYOSHI" },
   ]);
+  client.stop();
+});
+
+test("dispatches asynchronous chat handlers sequentially", async () => {
+  const order = [];
+  const client = new TwitchIrcClient({
+    channel: "example",
+    onMessage: async (message) => {
+      order.push(`start:${message}`);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      order.push(`end:${message}`);
+    },
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  client.handleData(
+    ":one!one@one.tmi.twitch.tv PRIVMSG #example :first\r\n" +
+    ":two!two@two.tmi.twitch.tv PRIVMSG #example :second\r\n",
+  );
+  await client.messageQueue;
+  assert.deepEqual(order, ["start:first", "end:first", "start:second", "end:second"]);
   client.stop();
 });
