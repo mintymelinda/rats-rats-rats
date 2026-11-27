@@ -125,6 +125,7 @@ export function createTwitchEmoteCatalog({
     const globalUrl = `${HELIX_URL}/chat/emotes/global`;
     const globalEmotes = await fetchAllPages(globalUrl);
     addEmotes(next, globalEmotes);
+    let channelLoadFailed = false;
 
     for (const login of channelLogins) {
       try {
@@ -134,11 +135,12 @@ export function createTwitchEmoteCatalog({
         const channelEmotes = await fetchAllPages(url.toString());
         addEmotes(next, channelEmotes);
       } catch (error) {
+        channelLoadFailed = true;
         logger.warn(`Unable to load Twitch emotes for #${login}: ${error.message}`);
       }
     }
 
-    emotes = next;
+    emotes = channelLoadFailed ? new Map([...emotes, ...next]) : next;
     logger.info(`Loaded ${emotes.size} Twitch emote(s) from global and ${channelLogins.length} channel catalog(s)`);
     return true;
   }
