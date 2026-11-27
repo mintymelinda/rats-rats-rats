@@ -92,10 +92,12 @@ export function createTwitchEmoteCatalog({
 
   async function fetchAllPages(url) {
     const all = [];
+    let template = null;
     let nextUrl = url;
     while (nextUrl) {
       const payload = await helix(nextUrl);
       if (!Array.isArray(payload.data)) throw new Error("Twitch returned an invalid emote list");
+      if (typeof payload.template === "string") template = payload.template;
       all.push(...payload.data);
       const cursor = payload.pagination?.cursor;
       if (!cursor) break;
@@ -103,7 +105,8 @@ export function createTwitchEmoteCatalog({
       pageUrl.searchParams.set("after", cursor);
       nextUrl = pageUrl.toString();
     }
-    return all;
+    if (!template) throw new Error("Twitch did not return an emote image URL template");
+    return { data: all, template };
   }
 
   async function getBroadcasterId(login) {
@@ -121,19 +124,14 @@ export function createTwitchEmoteCatalog({
     const next = new Map();
     const globalUrl = `${HELIX_URL}/chat/emotes/global`;
     const globalEmotes = await fetchAllPages(globalUrl);
-    const globalPayload = { data: globalEmotes, template: "https://static-cdn.jtvnw.net/emoticons/v2/{id}/{format}/{theme_mode}/{scale}" };
-    addEmotes(next, globalPayload);
+    addEmotes(next, globalEmotes);
 
     for (const login of channelLogins) {
       const broadcasterId = await getBroadcasterId(login);
       const url = new URL(`${HELIX_URL}/chat/emotes`);
       url.searchParams.set("broadcaster_id", broadcasterId);
       const channelEmotes = await fetchAllPages(url.toString());
-      const channelPayload = {
-        data: channelEmotes,
-        template: "https://static-cdn.jtvnw.net/emoticons/v2/{id}/{format}/{theme_mode}/{scale}",
-      };
-      addEmotes(next, channelPayload);
+      addEmotes(next, channelEmotes);
     }
 
     emotes = next;
