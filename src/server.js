@@ -48,6 +48,7 @@ const publicFiles = new Map([
   ["/overlay.js", "overlay.js"],
   ["/overlay.css", "overlay.css"],
   ["/gif-queue.js", "gif-queue.js"],
+  ["/gif-scheduler.js", "gif-scheduler.js"],
 ]);
 
 const server = http.createServer((request, response) => {
@@ -115,6 +116,7 @@ const irc = new TwitchIrcClient({
         queueIntervalMs: config.gifQueueIntervalMs,
         yOffsetPx: match.yOffsetPx,
         flip: match.flip,
+        moonratText: match.moonratText,
         moonwalk: shouldMoonwalk(Math.random, config.moonratDebug),
       });
     }
