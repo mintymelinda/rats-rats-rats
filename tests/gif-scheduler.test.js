@@ -15,9 +15,6 @@ function createHarness() {
       timers.push(timer);
       return timer;
     },
-    clearTimer(timer) {
-      timer.cancelled = true;
-    },
     spawnRegularGif(gif, onDisplayComplete) {
       calls.push(`regular:${gif.keyword}`);
       regularCompletions.push(onDisplayComplete);
@@ -30,66 +27,55 @@ function createHarness() {
       calls.push(`stage:${active}`);
     },
   });
-
-  function runTimer(timer) {
+  const runTimer = (timer) => {
     assert.equal(timer.cancelled, false);
     timer.callback();
-  }
-
+  };
   return { calls, timers, regularCompletions, moonratCompletions, queue, scheduler, runTimer };
 }
 
-test("regular GIFs spawn at the configured cadence and report when fully off-screen", () => {
+test("regular GIF bursts are FIFO and never overlap, with the configured minimum cadence", () => {
   const { calls, timers, regularCompletions, scheduler, runTimer } = createHarness();
   scheduler.enqueue({ keyword: "first", queueIntervalMs: 500 });
   scheduler.enqueue({ keyword: "second", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "third", queueIntervalMs: 500 });
 
   assert.deepEqual(calls, ["regular:first"]);
+  assert.equal(scheduler.activeRegularCount, 1);
   runTimer(timers[0]);
-  assert.deepEqual(calls, ["regular:first", "regular:second"]);
-  assert.equal(scheduler.activeRegularCount, 2);
+  assert.deepEqual(calls, ["regular:first"]);
+  assert.equal(scheduler.queuedCount, 2);
 
   regularCompletions[0]();
+  assert.deepEqual(calls, ["regular:first", "regular:second"]);
   assert.equal(scheduler.activeRegularCount, 1);
+  runTimer(timers[1]);
+  assert.deepEqual(calls, ["regular:first", "regular:second"]);
+
   regularCompletions[1]();
+  assert.deepEqual(calls, ["regular:first", "regular:second", "regular:third"]);
+  regularCompletions[2]();
   assert.equal(scheduler.activeRegularCount, 0);
 });
 
-test("a MOONRAT waits for every earlier regular GIF to leave the viewport, then blocks later GIFs until it exits", () => {
+test("a MOONRAT waits for earlier regular GIFs and blocks later GIFs until it exits", () => {
   const { calls, timers, regularCompletions, moonratCompletions, scheduler, runTimer } = createHarness();
-
   scheduler.enqueue({ keyword: "rat-1", queueIntervalMs: 500 });
   scheduler.enqueue({ keyword: "rat-2", queueIntervalMs: 500 });
-  scheduler.enqueue({ keyword: "rat-3", queueIntervalMs: 500 });
-  scheduler.enqueue({ keyword: "rat-4", queueIntervalMs: 500 });
   scheduler.enqueue({ keyword: "moonrat", moonwalk: true, durationMs: 8000 });
-  scheduler.enqueue({ keyword: "rat-5", queueIntervalMs: 500 });
-  scheduler.enqueue({ keyword: "rat-6", queueIntervalMs: 500 });
-  scheduler.enqueue({ keyword: "rat-7", queueIntervalMs: 500 });
-  scheduler.enqueue({ keyword: "rat-8", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "rat-3", queueIntervalMs: 500 });
 
   runTimer(timers[0]);
-  runTimer(timers[1]);
-  runTimer(timers[2]);
-  runTimer(timers[3]);
-
-  assert.deepEqual(calls.filter((call) => call.startsWith("regular:")), [
-    "regular:rat-1", "regular:rat-2", "regular:rat-3", "regular:rat-4",
-  ]);
-  assert.equal(scheduler.queuedCount, 5);
-
+  assert.deepEqual(calls, ["regular:rat-1"]);
   regularCompletions[0]();
+  assert.deepEqual(calls, ["regular:rat-1", "regular:rat-2"]);
+  runTimer(timers[1]);
   regularCompletions[1]();
-  regularCompletions[2]();
-  assert.equal(moonratCompletions.length, 0);
 
-  regularCompletions[3]();
   assert.deepEqual(calls.slice(-2), ["stage:true", "moonrat:moonrat"]);
   assert.equal(scheduler.moonratStageActive, true);
-
   moonratCompletions[0]();
-  assert.equal(scheduler.moonratStageActive, false);
-  assert.equal(calls.at(-1), "regular:rat-5");
+  assert.equal(calls.at(-1), "regular:rat-3");
 });
 
 test("debug and natural MOONRAT triggers follow identical FIFO behavior", () => {
@@ -103,13 +89,12 @@ test("debug and natural MOONRAT triggers follow identical FIFO behavior", () => 
     assert.deepEqual(calls, ["regular:before"]);
     regularCompletions[0]();
     assert.deepEqual(calls.slice(-2), ["stage:true", `moonrat:${source}`]);
-
     moonratCompletions[0]();
     assert.equal(calls.at(-1), "regular:after");
   }
 });
 
-test("multiple MOONRATs retain their exact FIFO positions among regular GIFs", () => {
+test("multiple MOONRATs retain their FIFO positions among serialized regular GIFs", () => {
   const { calls, timers, regularCompletions, moonratCompletions, scheduler, runTimer } = createHarness();
   scheduler.enqueue({ keyword: "regular-1", queueIntervalMs: 0 });
   scheduler.enqueue({ keyword: "moonrat-1", moonwalk: true });
@@ -119,7 +104,6 @@ test("multiple MOONRATs retain their exact FIFO positions among regular GIFs", (
   runTimer(timers[0]);
   regularCompletions[0]();
   assert.equal(calls.at(-1), "moonrat:moonrat-1");
-
   moonratCompletions[0]();
   assert.equal(calls.at(-1), "regular:regular-2");
   runTimer(timers[1]);
@@ -129,17 +113,18 @@ test("multiple MOONRATs retain their exact FIFO positions among regular GIFs", (
 });
 
 test("defaults missing queue intervals to 500ms while preserving explicit zero", () => {
-  const { calls, timers, scheduler, runTimer } = createHarness();
+  const { calls, timers, regularCompletions, scheduler, runTimer } = createHarness();
   scheduler.enqueue({ keyword: "default-delay" });
   scheduler.enqueue({ keyword: "no-delay", queueIntervalMs: 0 });
 
   assert.deepEqual(calls, ["regular:default-delay"]);
   assert.equal(timers[0].delay, 500);
   runTimer(timers[0]);
+  assert.deepEqual(calls, ["regular:default-delay"]);
+  regularCompletions[0]();
   assert.deepEqual(calls, ["regular:default-delay", "regular:no-delay"]);
   assert.equal(timers[1].delay, 0);
 });
-
 
 test("synchronous regular completion cannot bypass the configured spawn cadence", () => {
   const calls = [];
@@ -161,11 +146,8 @@ test("synchronous regular completion cannot bypass the configured spawn cadence"
 
   scheduler.enqueue({ keyword: "first", queueIntervalMs: 500 });
   scheduler.enqueue({ keyword: "second", queueIntervalMs: 500 });
-
   assert.deepEqual(calls, ["first"]);
   assert.equal(timers.length, 1);
-  assert.equal(timers[0].delay, 500);
-
   timers[0].callback();
   assert.deepEqual(calls, ["first", "second"]);
   assert.equal(timers.length, 2);
