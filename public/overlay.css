@@ -97,14 +97,11 @@ body {
   }
 
   52%,
-  68% {
+  90% {
     opacity: 1;
     transform: translateX(-50%) rotate(4deg) scale(1.12);
   }
 
-  76% {
-    transform: translateX(-50%) rotate(-4deg) scale(1.05);
-  }
 
   100% {
     opacity: 0;
