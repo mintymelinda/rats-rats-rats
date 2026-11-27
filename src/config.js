@@ -117,10 +117,6 @@ export function loadConfig(env = process.env) {
   }
 
   const mappingDefinitions = parseMappingDefinitions(env.GIF_MAPPINGS || JSON.stringify(DEFAULT_MAPPINGS));
-  const twitchEmoteChannels = (env.TWITCH_EMOTE_CHANNELS || "")
-    .split(",")
-    .map((login) => login.trim().replace(/^#/, "").toLowerCase())
-    .filter(Boolean);
   const twitchClientId = (env.TWITCH_CLIENT_ID || "").trim();
   const twitchClientSecret = (env.TWITCH_CLIENT_SECRET || "").trim();
   if (Boolean(twitchClientId) !== Boolean(twitchClientSecret)) {
@@ -139,7 +135,6 @@ export function loadConfig(env = process.env) {
     mappingsFile: env.GIF_MAPPINGS_FILE || null,
     twitchClientId,
     twitchClientSecret,
-    twitchEmoteChannels,
     mappingDefinitions,
     mappings: parseMappings(mappingDefinitions),
   };
