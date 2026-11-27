@@ -10,7 +10,7 @@ export function findDebugMoonratCommands(username, message, mappings = []) {
     .map((mapping) => mapping.keyword)
     .sort((a, b) => b.length - a.length);
   const commands = [];
-  const tokenPattern = /\\S+/g;
+  const tokenPattern = /\S+/g;
   let token;
 
   while ((token = tokenPattern.exec(message)) !== null) {
