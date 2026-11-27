@@ -30,11 +30,11 @@ test("loads Twitch global and monitored-channel catalogs using an app access tok
     calls.push({ url, options });
     if (url === "https://id.twitch.tv/oauth2/token") return response({ access_token: "app-token", expires_in: 3600 });
     if (url.endsWith("/chat/emotes/global")) {
-      return response({ data: [{ id: "1", name: "GlobalRat", template: "https://cdn.test/{{id}}/{{format}}/{{theme_mode}}/{{scale}", format: ["static"] }] });
+      return response({ data: [{ id: "1", name: "GlobalRat", template: "https://cdn.test/{{id}}/{{format}}/{{theme_mode}}/{{scale}}", format: ["static"] }] });
     }
     if (url.endsWith("/users?login=minty")) return response({ data: [{ id: "42" }] });
     if (url.endsWith("/chat/emotes?broadcaster_id=42")) {
-      return response({ data: [{ id: "2", name: "ChannelRat", template: "https://cdn.test/{{id}}/{{format}}/{{theme_mode}}/{{scale}", format: ["animated"] }] });
+      return response({ data: [{ id: "2", name: "ChannelRat", template: "https://cdn.test/{{id}}/{{format}}/{{theme_mode}}/{{scale}}", format: ["animated"] }] });
     }
     if (url.includes("7tv.io")) return response({ emotes: [] });
     if (url.includes("betterttv.net")) return response(url.includes("/cached/emotes/global") ? [] : { channelEmotes: [], sharedEmotes: [] });
@@ -72,7 +72,7 @@ test("provider fallback requires an exact case-insensitive emote-name match", as
 
   await registry.initialize();
   const result = await registry.resolve("sstWiggle");
-  assert.equal(result?.provider, "ffz");
+  assert.equal(result?.provider, "ffz-search");
   assert.equal(result?.src, "https://cdn.frankerfacez.com/emoticon/99/4");
   assert.equal(await registry.resolve("notAnEmote"), null);
 });
