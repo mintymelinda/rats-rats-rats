@@ -4,8 +4,8 @@ import { filterDebugMoonratKeywordMatch, findDebugMoonratCommand, getDebugMoonra
 import { findMatchesWithPositions } from "../src/matcher.js";
 
 const mappings = [
-  { keyword: "mindyfRatNes", moonratText: "MOONRAT" },
-  { keyword: "mindyfCow", moonratText: "MOONCOW" },
+  { keyword: "mindyfRatNes", normalizedKeyword: "mindyfratnes", moonratText: "MOONRAT" },
+  { keyword: "mindyfCow", normalizedKeyword: "mindyfcow", moonratText: "MOONCOW" },
 ];
 
 test("allows MintyMelinda's configured NES moonrat debug command", () => {
