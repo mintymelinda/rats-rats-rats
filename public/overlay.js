@@ -1,4 +1,5 @@
 import { createGifScheduler } from "./gif-scheduler.js";
+import { getHorizontalTravel } from "./gif-motion.js";
 
 const overlay = document.querySelector("#overlay");
 const reconnectDelayMs = 1500;
@@ -88,10 +89,15 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
     image.style.height = "auto";
 
     const horizontalScale = flip !== moonwalk ? -1 : 1;
+    const { startX, endX } = getHorizontalTravel({
+      viewportWidth: window.innerWidth,
+      scaledWidth,
+      flipped: horizontalScale < 0,
+    });
     const animation = image.animate(
       [
-        { transform: `translateX(-${scaledWidth}px) scaleX(${horizontalScale}) scale(${scale})` },
-        { transform: `translateX(${window.innerWidth}px) scaleX(${horizontalScale}) scale(${scale})` },
+        { transform: `translateX(${startX}px) scaleX(${horizontalScale}) scale(${scale})` },
+        { transform: `translateX(${endX}px) scaleX(${horizontalScale}) scale(${scale})` },
       ],
       { duration: durationMs, easing: "linear", fill: "forwards" },
     );
