@@ -6,6 +6,17 @@ const TWITCH_API = "https://api.twitch.tv/helix";
 const SEVENTV_API = "https://7tv.io/v3";
 const BTTV_API = "https://api.betterttv.net/3";
 const FFZ_API = "https://api.frankerfacez.com/v1";
+const PROVIDER_PRIORITY = new Map([
+  ["twitch-irc", 0],
+  ["twitch-channel", 1],
+  ["twitch-global", 2],
+  ["7tv-channel", 3],
+  ["7tv", 4],
+  ["bttv-channel", 5],
+  ["bttv", 6],
+  ["ffz-channel", 7],
+  ["ffz", 8],
+]);
 
 function normalize(name) {
   return String(name).toLocaleLowerCase("en-US");
@@ -70,7 +81,11 @@ export function createEmoteRegistry({
   function register(name, src, provider, id) {
     if (typeof name !== "string" || !name || typeof src !== "string" || !/^https:\/\//i.test(src)) return false;
     const key = normalize(name);
-    if (!emotes.has(key)) emotes.set(key, { name, src, provider, id: id || null });
+    const existing = emotes.get(key);
+    const priority = PROVIDER_PRIORITY.get(provider) ?? 99;
+    const existingPriority = existing ? (PROVIDER_PRIORITY.get(existing.provider) ?? 99) : Infinity;
+    if (existing && priority >= existingPriority) return false;
+    emotes.set(key, { name, src, provider, id: id || null });
     misses.delete(key);
     return true;
   }
