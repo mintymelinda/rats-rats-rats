@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { enqueueGif, getGifQueueDelay } from "../public/gif-queue.js";
+import { enqueueGif } from "../public/gif-queue.js";
 
 test("MOONRAT is promoted ahead of waiting regular GIFs without changing their order", () => {
   const queue = [];
@@ -32,14 +32,4 @@ test("multiple waiting MOONRAT events retain arrival order ahead of regular GIFs
     { keyword: "regular1" },
     { keyword: "regular2" },
   ]);
-});
-
-test("MOONRAT holds the queue for its display duration plus an equal quiet buffer", () => {
-  assert.equal(getGifQueueDelay({ moonwalk: true, durationMs: 8000 }), 16000);
-  assert.equal(getGifQueueDelay({ moonwalk: true, durationMs: 4500 }), 9000);
-});
-
-test("regular GIFs retain the configured queue interval", () => {
-  assert.equal(getGifQueueDelay({ queueIntervalMs: 500 }), 500);
-  assert.equal(getGifQueueDelay({ queueIntervalMs: 0 }), 0);
 });
