@@ -11,8 +11,8 @@ test("extracts chat text, emote tags, and sender from Twitch IRC PRIVMSG lines",
   });
 
   client.handleData(
-    "@badge-info=;badges=;emotes=25:0-4 :MintyMelinda!mintymelinda@mintymelinda.tmi.twitch.tv PRIVMSG #example :Kappa rats\\r\\n" +
-    ":PYOSHI!pyoshi@pyoshi.tmi.twitch.tv PRIVMSG #example :debugMoonRatmindfRatNes\\r\\n",
+    "@badge-info=;badges=;emotes=25:0-4 :MintyMelinda!mintymelinda@mintymelinda.tmi.twitch.tv PRIVMSG #example :Kappa rats\r\n" +
+    ":PYOSHI!pyoshi@pyoshi.tmi.twitch.tv PRIVMSG #example :debugMoonRatmindfRatNes\r\n",
   );
 
   assert.deepEqual(messages, [
