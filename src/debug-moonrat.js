@@ -26,6 +26,15 @@ export function findDebugMoonratCommand(username, message, mappings = []) {
   return null;
 }
 
+export function filterDebugMoonratKeywordMatch(events, debugCommand) {
+  if (!debugCommand) return events;
+  const keywordIndex = debugCommand.index + DEBUG_MOONRAT_PREFIX.length;
+  return events.filter((event) => (
+    event.index !== keywordIndex
+    || event.mapping.normalizedKeyword !== debugCommand.keyword.toLocaleLowerCase("en-US")
+  ));
+}
+
 export function getDebugMoonratKeyword(username, message, mappings = []) {
   return findDebugMoonratCommand(username, message, mappings)?.keyword ?? null;
 }
