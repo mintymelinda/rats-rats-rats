@@ -53,6 +53,10 @@ export function createGifScheduler({
   }
 
   function enqueue(gif) {
+    if (gif.moonwalk && regularTimer !== undefined && !moonratStageActive) {
+      clearTimer(regularTimer);
+      regularTimer = undefined;
+    }
     enqueueGif(queue, gif);
     processQueue();
   }

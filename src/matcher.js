@@ -1,4 +1,4 @@
-export function findMatches(message, mappings) {
+export function findMatchesWithPositions(message, mappings) {
   const normalizedMessage = message.toLocaleLowerCase("en-US");
   const matches = [];
 
@@ -11,12 +11,16 @@ export function findMatches(message, mappings) {
       const index = normalizedMessage.indexOf(normalizedKeyword, searchFrom);
       if (index === -1) break;
 
-      matches.push({ mapping, index, mappingIndex });
+      matches.push({ mapping, index, mappingIndex, debug: false });
       searchFrom = index + normalizedKeyword.length;
     }
   });
 
-  return matches
+  return matches;
+}
+
+export function findMatches(message, mappings) {
+  return findMatchesWithPositions(message, mappings)
     .sort((a, b) => a.index - b.index || a.mappingIndex - b.mappingIndex)
     .map(({ mapping }) => mapping);
 }

@@ -4,10 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
 import { loadConfig } from "./config.js";
-import { findMatches } from "./matcher.js";
+import { findMatchesWithPositions } from "./matcher.js";
 import { shouldMoonwalk } from "./moonwalk.js";
 import { findTwitchEmote } from "./twitch-emotes.js";
-import { getDebugMoonratKeyword } from "./debug-moonrat.js";
+import { findDebugMoonratCommand } from "./debug-moonrat.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -108,12 +108,25 @@ function broadcast(payload) {
 const irc = new TwitchIrcClient({
   channel: config.channel,
   onMessage(message, tags, username) {
-    const debugKeyword = getDebugMoonratKeyword(username, message);
-    const matches = debugKeyword
-      ? config.mappings.filter((mapping) => mapping.normalizedKeyword === debugKeyword.toLocaleLowerCase("en-US"))
-      : findMatches(message, config.mappings);
+    const debugCommand = findDebugMoonratCommand(username, message);
+    const events = findMatchesWithPositions(message, config.mappings);
+    if (debugCommand) {
+      const mappingIndex = config.mappings.findIndex(
+        (mapping) => mapping.normalizedKeyword === debugCommand.keyword.toLocaleLowerCase("en-US"),
+      );
+      if (mappingIndex !== -1) {
+        events.push({
+          mapping: config.mappings[mappingIndex],
+          index: debugCommand.index,
+          mappingIndex,
+          debug: true,
+        });
+      }
+    }
 
-    for (const match of matches) {
+    events.sort((a, b) => a.index - b.index || a.mappingIndex - b.mappingIndex);
+    for (const event of events) {
+      const match = event.mapping;
       const src = match.exists
         ? match.path
         : findTwitchEmote(message, tags.emotes, match.keyword)?.src;
@@ -129,7 +142,7 @@ const irc = new TwitchIrcClient({
         yOffsetPx: match.yOffsetPx,
         flip: match.flip,
         moonratText: match.moonratText,
-        moonwalk: debugKeyword ? true : shouldMoonwalk(Math.random, config.moonratDebug),
+        moonwalk: event.debug ? true : shouldMoonwalk(Math.random, config.moonratDebug),
       });
     }
   },
