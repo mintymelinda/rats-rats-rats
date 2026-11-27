@@ -79,6 +79,6 @@ test("provider fallback requires an exact case-insensitive emote-name match", as
 
 test("does not require Twitch credentials to learn and resolve observed emotes", async () => {
   const registry = createEmoteRegistry({ logger: { warn() {}, info() {} } });
-  registry.learnFromIrc("sstWiggle", "25:0-9");
+  registry.learnFromIrc("sstWiggle", "25:0-8");
   assert.equal(registry.get("sstWiggle")?.provider, "twitch-irc");
 });
