@@ -14,6 +14,9 @@ services:
       TWITCH_CHANNEL: "mintymelinda"
       GIF_QUEUE_INTERVAL_MS: "500"
       GIF_MAPPINGS_FILE: "/data/gif-mappings.json"
+      EMOTE_CACHE_FILE: "/data/emote-cache.json"
+      TWITCH_CLIENT_ID: "${TWITCH_CLIENT_ID:-}"
+      TWITCH_CLIENT_SECRET: "${TWITCH_CLIENT_SECRET:-}"
       GIF_MAPPINGS: >-
         {
           "mindyfRatNes": {
