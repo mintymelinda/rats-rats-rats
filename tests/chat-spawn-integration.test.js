@@ -82,15 +82,16 @@ test("one Twitch chat message reaches the browser scheduler as every mapped GIF 
   assert.equal(timers[0].delay, 500);
 
   timers[0].callback();
-  assert.deepEqual(spawned, ["mindyfRatSnes"]);
-  assert.equal(timers.length, 1);
-
-  completions[0]();
   assert.deepEqual(spawned, ["mindyfRatSnes", "mindyfRatNes"]);
   assert.equal(timers[1].delay, 500);
-  timers[1].callback();
-  assert.deepEqual(spawned, ["mindyfRatSnes", "mindyfRatNes"]);
 
-  completions[1]();
+  timers[1].callback();
   assert.deepEqual(spawned, ["mindyfRatSnes", "mindyfRatNes", "mindyfRatDos"]);
+  assert.equal(timers[2].delay, 500);
+
+  assert.equal(scheduler.activeRegularCount, 3);
+  completions[0]();
+  completions[1]();
+  completions[2]();
+  assert.equal(scheduler.activeRegularCount, 0);
 });
