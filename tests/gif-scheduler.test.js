@@ -5,6 +5,8 @@ import { createGifScheduler } from "../public/gif-scheduler.js";
 function createHarness() {
   const calls = [];
   const timers = [];
+  const regularCompletions = [];
+  const moonratCompletions = [];
   const queue = [];
   const scheduler = createGifScheduler({
     queue,
@@ -16,15 +18,13 @@ function createHarness() {
     clearTimer(timer) {
       timer.cancelled = true;
     },
-    clearActiveGifs() {
-      calls.push("clear-active");
-    },
-    spawnRegularGif(gif) {
+    spawnRegularGif(gif, onDisplayComplete) {
       calls.push(`regular:${gif.keyword}`);
+      regularCompletions.push(onDisplayComplete);
     },
     spawnMoonwalkGif(gif, onDisplayComplete) {
-      calls.push(`moonwalk:${gif.keyword}`);
-      calls.push({ completeMoonwalk: onDisplayComplete });
+      calls.push(`moonrat:${gif.keyword}`);
+      moonratCompletions.push(onDisplayComplete);
     },
     onMoonratStageChange(active) {
       calls.push(`stage:${active}`);
@@ -36,90 +36,94 @@ function createHarness() {
     timer.callback();
   }
 
-  return { calls, timers, queue, scheduler, runTimer };
+  return { calls, timers, regularCompletions, moonratCompletions, queue, scheduler, runTimer };
 }
 
-test("a MOONRAT immediately interrupts regular spawns and clears visible rats", () => {
-  const { calls, timers, scheduler } = createHarness();
+test("regular GIFs spawn at the configured cadence and report when fully off-screen", () => {
+  const { calls, timers, regularCompletions, scheduler, runTimer } = createHarness();
   scheduler.enqueue({ keyword: "first", queueIntervalMs: 500 });
   scheduler.enqueue({ keyword: "second", queueIntervalMs: 500 });
-  const regularTimer = timers[0];
 
-  scheduler.enqueue({ keyword: "moonrat", moonwalk: true, durationMs: 8000 });
-
-  assert.equal(regularTimer.cancelled, true);
-  assert.deepEqual(calls.filter((call) => typeof call === "string"), [
-    "regular:first",
-    "clear-active",
-    "stage:true",
-    "moonwalk:moonrat",
-  ]);
-  assert.equal(typeof calls[4].completeMoonwalk, "function");
-  assert.equal(scheduler.moonratStageActive, true);
-});
-
-test("the blank buffer begins after the MOONRAT animation finishes and lasts equally long", () => {
-  const { calls, timers, scheduler, runTimer } = createHarness();
-  scheduler.enqueue({ keyword: "moonrat", moonwalk: true, durationMs: 8000 });
-  const completion = calls.find((call) => typeof call === "object").completeMoonwalk;
-
-  completion();
-  assert.equal(timers[0].delay, 8000);
-  assert.equal(scheduler.moonratStageActive, true);
-  assert.equal(calls.includes("stage:false"), false);
-
+  assert.deepEqual(calls, ["regular:first"]);
   runTimer(timers[0]);
-  assert.equal(scheduler.moonratStageActive, false);
-  assert.equal(calls.includes("stage:false"), true);
+  assert.deepEqual(calls, ["regular:first", "regular:second"]);
+  assert.equal(scheduler.activeRegularCount, 2);
+
+  regularCompletions[0]();
+  assert.equal(scheduler.activeRegularCount, 1);
+  regularCompletions[1]();
+  assert.equal(scheduler.activeRegularCount, 0);
 });
 
-test("regular GIFs wait through the MOONRAT display and blank buffer", () => {
-  const { calls, timers, scheduler, runTimer } = createHarness();
-  scheduler.enqueue({ keyword: "moonrat", moonwalk: true, durationMs: 4000 });
-  scheduler.enqueue({ keyword: "queued-regular", queueIntervalMs: 500 });
-  const completion = calls.find((call) => typeof call === "object").completeMoonwalk;
+test("a MOONRAT waits for every earlier regular GIF to leave the viewport, then blocks later GIFs until it exits", () => {
+  const { calls, timers, regularCompletions, moonratCompletions, scheduler, runTimer } = createHarness();
 
-  completion();
-  assert.equal(calls.includes("regular:queued-regular"), false);
-  runTimer(timers[0]);
-  assert.equal(calls.includes("regular:queued-regular"), true);
-});
-
-test("moonwalks arriving during the exclusive stage are prioritized ahead of regulars", () => {
-  const { calls, timers, scheduler, runTimer } = createHarness();
-  scheduler.enqueue({ keyword: "first-moon", moonwalk: true, durationMs: 1000 });
-  scheduler.enqueue({ keyword: "regular", queueIntervalMs: 100 });
-  scheduler.enqueue({ keyword: "second-moon", moonwalk: true, durationMs: 2000 });
-
-  const firstCompletion = calls.find((call) => typeof call === "object").completeMoonwalk;
-  firstCompletion();
-  runTimer(timers[0]);
-
-  assert.deepEqual(calls.filter((call) => typeof call === "string" && /^(moonwalk|regular):/.test(call)), [
-    "moonwalk:first-moon",
-    "moonwalk:second-moon",
-  ]);
-});
-
-test("a debug MOONRAT interrupts a regular cadence immediately and preserves queued FIFO", () => {
-  const { calls, timers, scheduler, runTimer } = createHarness();
   scheduler.enqueue({ keyword: "rat-1", queueIntervalMs: 500 });
   scheduler.enqueue({ keyword: "rat-2", queueIntervalMs: 500 });
-  const cadenceTimer = timers[0];
+  scheduler.enqueue({ keyword: "rat-3", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "rat-4", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "moonrat", moonwalk: true, durationMs: 8000 });
+  scheduler.enqueue({ keyword: "rat-5", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "rat-6", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "rat-7", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "rat-8", queueIntervalMs: 500 });
 
-  scheduler.enqueue({ keyword: "debug-moonrat", moonwalk: true, durationMs: 1000 });
+  runTimer(timers[0]);
+  runTimer(timers[1]);
+  runTimer(timers[2]);
+  runTimer(timers[3]);
 
-  assert.equal(cadenceTimer.cancelled, true);
-  assert.equal(scheduler.moonratStageActive, true);
-  assert.deepEqual(calls.filter((call) => typeof call === "string"), [
-    "regular:rat-1",
-    "clear-active",
-    "stage:true",
-    "moonwalk:debug-moonrat",
+  assert.deepEqual(calls.filter((call) => call.startsWith("regular:")), [
+    "regular:rat-1", "regular:rat-2", "regular:rat-3", "regular:rat-4",
   ]);
+  assert.equal(scheduler.queuedCount, 5);
 
-  const completion = calls.find((call) => typeof call === "object").completeMoonwalk;
-  completion();
-  runTimer(timers.at(-1));
-  assert.equal(calls.includes("regular:rat-2"), true);
+  regularCompletions[0]();
+  regularCompletions[1]();
+  regularCompletions[2]();
+  assert.equal(moonratCompletions.length, 0);
+
+  regularCompletions[3]();
+  assert.deepEqual(calls.slice(-2), ["stage:true", "moonrat:moonrat"]);
+  assert.equal(scheduler.moonratStageActive, true);
+
+  moonratCompletions[0]();
+  assert.equal(scheduler.moonratStageActive, false);
+  assert.equal(calls.at(-1), "regular:rat-5");
+});
+
+test("debug and natural MOONRAT triggers follow identical FIFO behavior", () => {
+  for (const source of ["debug", "natural"]) {
+    const { calls, timers, regularCompletions, moonratCompletions, scheduler, runTimer } = createHarness();
+    scheduler.enqueue({ keyword: "before", queueIntervalMs: 0 });
+    scheduler.enqueue({ keyword: source, moonwalk: true, durationMs: 1000 });
+    scheduler.enqueue({ keyword: "after", queueIntervalMs: 0 });
+
+    runTimer(timers[0]);
+    assert.deepEqual(calls, ["regular:before"]);
+    regularCompletions[0]();
+    assert.deepEqual(calls.slice(-2), ["stage:true", `moonrat:${source}`]);
+
+    moonratCompletions[0]();
+    assert.equal(calls.at(-1), "regular:after");
+  }
+});
+
+test("multiple MOONRATs retain their exact FIFO positions among regular GIFs", () => {
+  const { calls, timers, regularCompletions, moonratCompletions, scheduler, runTimer } = createHarness();
+  scheduler.enqueue({ keyword: "regular-1", queueIntervalMs: 0 });
+  scheduler.enqueue({ keyword: "moonrat-1", moonwalk: true });
+  scheduler.enqueue({ keyword: "regular-2", queueIntervalMs: 0 });
+  scheduler.enqueue({ keyword: "moonrat-2", moonwalk: true });
+
+  runTimer(timers[0]);
+  regularCompletions[0]();
+  assert.equal(calls.at(-1), "moonrat:moonrat-1");
+
+  moonratCompletions[0]();
+  assert.equal(calls.at(-1), "regular:regular-2");
+  runTimer(timers[1]);
+  regularCompletions[1]();
+  assert.equal(calls.at(-1), "moonrat:moonrat-2");
+  assert.equal(scheduler.moonratStageActive, true);
 });
