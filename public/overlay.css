@@ -40,6 +40,14 @@ body {
   will-change: transform;
 }
 
+#overlay.moonrat-stage .rat-gif:not(.moonrat-gif) {
+  display: none;
+}
+
+.moonrat-gif {
+  z-index: 10;
+}
+
 .moonrat-announcement {
   position: absolute;
   z-index: 1000;
