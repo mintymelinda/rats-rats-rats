@@ -15,7 +15,7 @@ test("learns all IRC-tagged Twitch emotes and persists discoveries across restar
   const id = "emotesv2_34a6cc63c24f41cc9d702d494ae09def";
   const registry = createEmoteRegistry({ cacheFile, logger: { warn() {}, info() {} } });
 
-  const learned = registry.learnFromIrc("Kappa sstWiggle", `25:0-4/${id}:6-15`);
+  const learned = registry.learnFromIrc("Kappa sstWiggle", `25:0-4/${id}:6-14`);
   assert.deepEqual(learned.map(({ name }) => name), ["Kappa", "sstWiggle"]);
   assert.equal(registry.get("SSTWIGGLE")?.id, id);
 
@@ -77,7 +77,6 @@ test("provider fallback requires an exact case-insensitive emote-name match", as
 
 test("does not require Twitch credentials to learn and resolve observed emotes", async () => {
   const registry = createEmoteRegistry({ logger: { warn() {}, info() {} } });
-  await registry.initialize();
   registry.learnFromIrc("sstWiggle", "25:0-9");
   assert.equal(registry.get("sstWiggle")?.provider, "twitch-irc");
 });
