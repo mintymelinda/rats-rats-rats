@@ -100,3 +100,30 @@ test("moonwalks arriving during the exclusive stage are prioritized ahead of reg
     "moonwalk:second-moon",
   ]);
 });
+
+test("repeated debug moonwalks use the priority queue without an extra pre-delay", () => {
+  const { calls, timers, scheduler, runTimer } = createHarness();
+
+  scheduler.enqueue({ keyword: "debug-first", moonwalk: true, durationMs: 1000 });
+  assert.deepEqual(calls.filter((call) => typeof call === "string"), [
+    "clear-active",
+    "stage:true",
+    "moonwalk:debug-first",
+  ]);
+  assert.equal(timers.length, 0);
+
+  scheduler.enqueue({ keyword: "debug-second", moonwalk: true, durationMs: 2000 });
+  assert.equal(scheduler.queuedCount, 1);
+  assert.equal(calls.filter((call) => typeof call === "string" && call.startsWith("moonwalk:")).length, 1);
+
+  const firstCompletion = calls.find((call) => typeof call === "object").completeMoonwalk;
+  firstCompletion();
+  assert.equal(timers[0].delay, 1000);
+  runTimer(timers[0]);
+
+  assert.deepEqual(
+    calls.filter((call) => typeof call === "string" && /^(moonwalk|regular):/.test(call)),
+    ["moonwalk:debug-first", "moonwalk:debug-second"],
+  );
+  assert.equal(scheduler.moonratStageActive, true);
+});
