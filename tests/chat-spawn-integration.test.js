@@ -31,6 +31,7 @@ test("one Twitch chat message reaches the browser scheduler as every mapped GIF 
   const server = http.createServer();
   const webSockets = new WebSocketServer({ server });
   const spawned = [];
+  const completions = [];
   const timers = [];
   const scheduler = createGifScheduler({
     setTimer(callback, delay) {
@@ -40,6 +41,7 @@ test("one Twitch chat message reaches the browser scheduler as every mapped GIF 
     },
     spawnRegularGif(gif, complete) {
       spawned.push(gif.keyword);
+      completions.push(complete);
     },
     spawnMoonwalkGif() {
       assert.fail("This input should not start a MOONRAT stage");
@@ -80,9 +82,15 @@ test("one Twitch chat message reaches the browser scheduler as every mapped GIF 
   assert.equal(timers[0].delay, 500);
 
   timers[0].callback();
+  assert.deepEqual(spawned, ["mindyfRatSnes"]);
+  assert.equal(timers.length, 1);
+
+  completions[0]();
   assert.deepEqual(spawned, ["mindyfRatSnes", "mindyfRatNes"]);
   assert.equal(timers[1].delay, 500);
-
   timers[1].callback();
+  assert.deepEqual(spawned, ["mindyfRatSnes", "mindyfRatNes"]);
+
+  completions[1]();
   assert.deepEqual(spawned, ["mindyfRatSnes", "mindyfRatNes", "mindyfRatDos"]);
 });
