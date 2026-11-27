@@ -17,7 +17,7 @@ function queueDebug(message) {
   console.info(`[gif-queue] ${line}`);
   debugLines.push(line);
   debugLines = debugLines.slice(-24);
-  if (debugPanel) debugPanel.textContent = debugLines.join("\\n");
+  if (debugPanel) debugPanel.textContent = debugLines.join("\n");
 }
 
 if (queueDebugEnabled) {
