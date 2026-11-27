@@ -16,6 +16,8 @@ const PROVIDER_PRIORITY = new Map([
   ["bttv", 6],
   ["ffz-channel", 7],
   ["ffz", 8],
+  ["7tv-search", 9],
+  ["ffz-search", 10],
 ]);
 
 function normalize(name) {
@@ -92,7 +94,7 @@ export function createEmoteRegistry({
 
   function persist() {
     if (!cacheFile) return;
-    const discovered = [...emotes.values()].filter((item) => item.provider === "twitch-irc");
+    const discovered = [...emotes.values()].filter((item) => ["twitch-irc", "7tv-search", "ffz-search"].includes(item.provider));
     fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
     const temporaryPath = `${cacheFile}.${process.pid}.tmp`;
     fs.writeFileSync(temporaryPath, `${JSON.stringify(discovered, null, 2)}\n`, { mode: 0o600 });
@@ -105,7 +107,7 @@ export function createEmoteRegistry({
       const stored = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
       if (!Array.isArray(stored)) throw new Error("cache must be an array");
       for (const item of stored) {
-        if (item?.provider === "twitch-irc") register(item.name, item.src, item.provider, item.id);
+        if (["twitch-irc", "7tv-search", "ffz-search"].includes(item?.provider)) register(item.name, item.src, item.provider, item.id);
       }
     } catch (error) {
       logger.warn(`Ignoring invalid emote cache at ${cacheFile}: ${error.message}`);
@@ -244,13 +246,14 @@ export function createEmoteRegistry({
 
   async function searchProviders(name) {
     const encoded = encodeURIComponent(name);
+    let changed = false;
     const jobs = [
       (async () => {
         const data = await responseJson(fetchImpl, `${SEVENTV_API}/emotes?query=${encoded}`);
         const exact = (Array.isArray(data) ? data : data.emotes || []).find((item) => normalize(item.name) === normalize(name));
         if (exact) {
           const src = sevenTvImage(exact);
-          if (src) register(exact.name, src, "7tv", exact.id);
+          if (src) changed = register(exact.name, src, "7tv-search", exact.id) || changed;
         }
       })(),
       (async () => {
@@ -258,11 +261,12 @@ export function createEmoteRegistry({
         const exact = (data.emoticons || []).find((item) => normalize(item.name) === normalize(name));
         if (exact) {
           const src = ffzImage(exact);
-          if (src) register(exact.name, src, "ffz", exact.id);
+          if (src) changed = register(exact.name, src, "ffz-search", exact.id) || changed;
         }
       })(),
     ];
     await Promise.allSettled(jobs);
+    if (changed) persist();
   }
 
   async function initialize() {
