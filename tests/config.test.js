@@ -72,6 +72,20 @@ test("parses per-GIF paths, animation durations, scales, offsets, and flips", ()
   ]);
 });
 
+test("allows a Twitch-emote-only mapping with no local GIF path", () => {
+  const [mapping] = parseMappings(JSON.stringify({
+    graped4Based: { durationMs: 4000, scale: 1, yOffsetPx: 0, flip: false },
+  }));
+
+  assert.equal(mapping.keyword, "graped4Based");
+  assert.equal(mapping.path, null);
+  assert.equal(mapping.exists, false);
+  assert.equal(mapping.durationMs, 4000);
+  assert.equal(mapping.scale, 1);
+  assert.equal(mapping.yOffsetPx, 0);
+  assert.equal(mapping.flip, false);
+});
+
 test("rejects invalid mapping JSON, values, paths, durations, scales, offsets, and flips", () => {
   assert.throws(() => parseMappings("{"), /valid JSON object/);
   assert.throws(() => parseMappings("[]"), /JSON object/);
@@ -79,6 +93,7 @@ test("rejects invalid mapping JSON, values, paths, durations, scales, offsets, a
   assert.throws(() => parseMappings('{"rat":{"path":"/etc/passwd.gif"}}'), /under \/assets\//);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/../outside.gif"}}'), /escapes/);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.png"}}'), /\.gif file/);
+  assert.throws(() => parseMappings('{"rat":{"path":null}}'), /under \/assets\//);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","yOffsetPx":1.5}}'), /yOffsetPx/);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","yOffsetPx":10001}}'), /yOffsetPx/);
   assert.throws(() => parseMappings('{"rat":{"path":"/assets/rat.gif","durationMs":249}}'), /durationMs/);
@@ -104,7 +119,7 @@ test("validates channel, port, queue interval, MOONRAT debug flag, and announcem
   });
   assert.throws(() => loadConfig({ MOONRAT_DEBUG: "yes" }), /MOONRAT_DEBUG/);
   assert.throws(() => loadConfig({ MOONRAT_TEXT_COLOR: "red" }), /MOONRAT_TEXT_COLOR/);
-  assert.throws(() => loadConfig({ MOONRAT_OUTLINE_COLOR: "url\(javascript:alert\(1\)\)" }), /MOONRAT_OUTLINE_COLOR/);
+  assert.throws(() => loadConfig({ MOONRAT_OUTLINE_COLOR: "url\\(javascript:alert\\(1\\)\\)" }), /MOONRAT_OUTLINE_COLOR/);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "-1" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ TWITCH_CHANNEL: "not a channel" }), /TWITCH_CHANNEL/);
