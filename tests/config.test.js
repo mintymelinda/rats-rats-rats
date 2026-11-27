@@ -8,6 +8,8 @@ test("loads the documented defaults", () => {
   assert.equal(config.port, 3000);
   assert.equal(config.gifQueueIntervalMs, 500);
   assert.equal(config.moonratDebug, false);
+  assert.equal(config.twitchClientId, "");
+  assert.equal(config.twitchClientSecret, "");
   assert.deepEqual(config.moonratColors, {
     text: "#fff36b",
     outline: "#a400a8",
@@ -124,4 +126,5 @@ test("validates channel, port, queue interval, MOONRAT debug flag, and announcem
   assert.throws(() => loadConfig({ GIF_QUEUE_INTERVAL_MS: "60001" }), /GIF_QUEUE_INTERVAL_MS/);
   assert.throws(() => loadConfig({ TWITCH_CHANNEL: "not a channel" }), /TWITCH_CHANNEL/);
   assert.throws(() => loadConfig({ PORT: "70000" }), /PORT/);
+  assert.throws(() => loadConfig({ TWITCH_CLIENT_ID: "client-id" }), /both be set/);
 });

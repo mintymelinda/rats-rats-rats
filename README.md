@@ -26,22 +26,38 @@ Supported `!add` query parameters:
 | `moonratText` | inferred from keyword | non-empty text up to 40 characters |
 | `path` | none | optional GIF path under `/assets/` |
 
-URL-encode spaces or special characters in parameter values. Twitch emote-only mappings need no local GIF file: the server resolves the emote ID from Twitch IRC tags when that keyword appears as an emote in chat.
+URL-encode spaces or special characters in parameter values. Twitch emote-only mappings need no local GIF file: the server resolves the image from the Twitch emote catalog, with IRC emote tags as a fallback.
 
 The server applies changes immediately. No container restart or browser-source refresh is required for new chat messages to use the updated mappings.
+
+### Twitch emote catalog lookup
+
+The bot can resolve emotes even when nobody in the monitored chat is subscribed to the emote's channel. It loads global Twitch emotes at startup. For channel emotes, it extracts the conventional lowercase prefix before the PascalCase suffix (for example, `sstWiggle` → `sst`), searches Twitch channels using that prefix, and checks candidate channel emote catalogs for an exact name match. It never assumes a channel owns an emote just because its name looks similar. Successful results are cached; unresolved names are briefly cached to avoid repeated API requests. IRC emote tags remain the fallback.
+
+Add your Twitch application credentials to the project `.env` file (it is git-ignored):
+
+```dotenv
+TWITCH_CLIENT_ID=your_twitch_application_client_id
+TWITCH_CLIENT_SECRET=your_twitch_application_client_secret
+```
+
+Docker Compose passes these values into the container. No channel list or per-channel configuration is required. Twitch channel search is used to discover likely owners from the emote prefix; candidate channels are checked against their actual Helix emote catalogs before an image is accepted. This is best-effort rather than universal: Twitch has no official prefix-to-owner index, and channel search may not return a channel based on initials alone. If the candidate is not surfaced by search, the custom emote cannot be resolved through this path.
+
+The catalog refreshes every 30 minutes. Twitch app access tokens are obtained server-to-server; the registered redirect URL is not used. If the API is temporarily unavailable, the overlay continues running and keeps the last successfully loaded catalog.
 
 ## Static configuration
 
 Runtime settings remain in `docker-compose.yaml`:
 
 - `TWITCH_CHANNEL`: Twitch channel to monitor.
+- `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`: optional Twitch application credentials for emote catalog lookup (set in `.env`).
 - `GIF_QUEUE_INTERVAL_MS`: delay between queued spawns; `0` disables the delay.
 - `MOONRAT_DEBUG`: force every GIF spawn to moonwalk when set to `true`.
 - `MOONRAT_TEXT_COLOR`, `MOONRAT_OUTLINE_COLOR`, `MOONRAT_GLOW_COLOR`: announcement colors.
 - `GIF_MAPPINGS_FILE`: path to the persistent JSON mapping file (default in Compose: `/data/gif-mappings.json`).
 - `GIF_MAPPINGS`: initial seed data only; edits after first startup are stored in the JSON file.
 
-Existing mapping settings remain supported: `path` (optional), `durationMs`, `scale`, `yOffsetPx`, `flip`, and `moonratText`. If a configured local GIF exists it is used; otherwise the server falls back to the matching Twitch emote ID from the message's IRC `emotes` tag.
+Existing mapping settings remain supported: `path` (optional), `durationMs`, `scale`, `yOffsetPx`, `flip`, and `moonratText`. If a configured local GIF exists it is used; otherwise the server uses an IRC emote tag or discovers the keyword's Twitch emote owner from its prefix.
 
 ## MOONRAT behavior
 
