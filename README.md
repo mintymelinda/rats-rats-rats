@@ -10,6 +10,7 @@ The following commands are available to the channel owner and the existing autho
 
 - `!add kintBee` adds a Twitch-emote-only mapping with the default animation settings.
 - `!add kintBee?flipped=true&scale=4` adds the mapping with horizontal flipping and scale 4.
+- `!add kintBee ?flip=true&scale=4&durationMs=8000` also works; the space before `?` is accepted because Twitch may separate an emote from following text.
 - `!remove kintBee` removes the mapping.
 
 Commands are case-insensitive. The keyword may contain 1–64 letters, numbers, or underscores. An existing mapping cannot be added a second time; remove it first if you want to replace it. Unauthorized commands are ignored. Management commands do not trigger GIF matching.
