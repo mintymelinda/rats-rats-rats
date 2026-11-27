@@ -46,16 +46,20 @@ test("one Twitch chat message reaches the browser scheduler as every mapped GIF 
     },
   });
 
-  webSockets.on("connection", (socket) => {
-    socket.on("message", (data) => {
-      const payload = JSON.parse(data.toString());
-      if (payload.type === "spawn") scheduler.enqueue(payload);
-    });
-  });
-
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   const client = new WebSocket(`ws://127.0.0.1:${address.port}`);
+  let received = 0;
+  let resolveAllReceived;
+  const allReceived = new Promise((resolve) => { resolveAllReceived = resolve; });
+  client.on("message", (data) => {
+    const payload = JSON.parse(data.toString());
+    if (payload.type === "spawn") {
+      scheduler.enqueue(payload);
+      received += 1;
+      if (received === events.length) resolveAllReceived();
+    }
+  });
   t.after(async () => {
     client.close();
     await new Promise((resolve) => webSockets.close(resolve));
@@ -70,7 +74,7 @@ test("one Twitch chat message reaches the browser scheduler as every mapped GIF 
     for (const peer of webSockets.clients) peer.send(JSON.stringify(event));
   }
 
-  await new Promise((resolve) => setImmediate(resolve));
+  await allReceived;
   assert.deepEqual(spawned, ["mindyfRatSnes"]);
   assert.equal(timers.length, 1);
   assert.equal(timers[0].delay, 500);
