@@ -5,7 +5,7 @@ const KEYWORD_PATTERN = /^[a-zA-Z0-9_]{1,64}$/;
 const ALLOWED_PARAMETERS = new Set(["scale", "durationMs", "yOffsetPx", "flipped", "flip", "moonratText", "path"]);
 
 export function isMappingCommand(message) {
-  return typeof message === "string" && /^!(?:add|remove)(?:\s|$)/i.test(message.trim());
+  return typeof message === "string" && /^!(?:add|remove)(?:\\s|$)/i.test(message.trim());
 }
 
 export function handleMappingCommand({ username, message, manager, logger = console }) {
@@ -14,7 +14,7 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     return { handled: true, authorized: false };
   }
 
-  const match = message.trim().match(/^!(add|remove)\s+(.+)$/i);
+  const match = message.trim().match(/^!(add|remove)\\s+(.+)$/i);
   if (!match) {
     logger.warn("Ignored malformed mapping command from " + username);
     return { handled: true, authorized: true, error: "Usage: !add keyword ?scale=2&flip=true or !remove keyword" };
@@ -62,9 +62,13 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     if (params.has("path")) settings.path = params.get("path");
     parseMappings({ [keyword]: settings });
 
+    const existed = manager.mappings.some(
+      (item) => item.normalizedKeyword === keyword.toLocaleLowerCase("en-US"),
+    );
     const mapping = manager.add(keyword, settings);
-    logger.info("Added GIF mapping \"" + keyword + "\" (" + JSON.stringify(settings) + ") at chat request of " + username);
-    return { handled: true, authorized: true, action: "add", keyword, mapping };
+    const actionName = existed ? "Updated" : "Added";
+    logger.info(actionName + " GIF mapping \"" + mapping.keyword + "\" (" + JSON.stringify(settings) + ") at chat request of " + username);
+    return { handled: true, authorized: true, action: existed ? "update" : "add", keyword: mapping.keyword, mapping };
   } catch (error) {
     logger.warn("Mapping command rejected from " + username + ": " + error.message);
     return { handled: true, authorized: true, error: error.message };
