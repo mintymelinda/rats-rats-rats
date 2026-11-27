@@ -60,6 +60,7 @@ export function createTwitchEmoteCatalog({
 }) {
   const configured = Boolean(clientId && clientSecret);
   let emotes = new Map();
+  const discoveredEmotes = new Map();
   let accessToken = null;
   let tokenExpiresAt = 0;
   let refreshTimer = null;
@@ -172,7 +173,7 @@ export function createTwitchEmoteCatalog({
           name: found.name,
           src: emoteImageUrl(catalog.template, found),
         };
-        emotes.set(keyword.toLocaleLowerCase("en-US"), result);
+        discoveredEmotes.set(keyword.toLocaleLowerCase("en-US"), result);
         logger.info(`Resolved Twitch emote ${keyword} from channel ${candidate.display_name ?? candidate.id}`);
         return result;
       }
@@ -183,7 +184,7 @@ export function createTwitchEmoteCatalog({
   async function resolve(keyword) {
     if (typeof keyword !== "string" || !configured) return null;
     const normalized = keyword.toLocaleLowerCase("en-US");
-    const cached = emotes.get(normalized);
+    const cached = emotes.get(normalized) ?? discoveredEmotes.get(normalized);
     if (cached) return cached;
     const missUntil = misses.get(normalized) ?? 0;
     if (Date.now() < missUntil) return null;
@@ -225,10 +226,11 @@ export function createTwitchEmoteCatalog({
     stop,
     find(keyword) {
       if (typeof keyword !== "string") return null;
-      return emotes.get(keyword.toLocaleLowerCase("en-US")) ?? null;
+      const normalized = keyword.toLocaleLowerCase("en-US");
+      return emotes.get(normalized) ?? discoveredEmotes.get(normalized) ?? null;
     },
     get size() {
-      return emotes.size;
+      return emotes.size + discoveredEmotes.size;
     },
   };
 }
