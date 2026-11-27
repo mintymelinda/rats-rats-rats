@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { TwitchIrcClient } from "../src/twitch-irc.js";
 
-test("extracts chat text, emote tags, and sender from Twitch IRC PRIVMSG lines", () => {
+test("extracts chat text, emote tags, and sender from Twitch IRC PRIVMSG lines", async () => {
   const messages = [];
   const client = new TwitchIrcClient({
     channel: "example",
@@ -15,6 +15,7 @@ test("extracts chat text, emote tags, and sender from Twitch IRC PRIVMSG lines",
     ":PYOSHI!pyoshi@pyoshi.tmi.twitch.tv PRIVMSG #example :debugMoonRatmindfRatNes\r\n",
   );
 
+  await client.messageQueue;
   assert.deepEqual(messages, [
     { message: "Kappa rats", tags: { emotes: "25:0-4" }, username: "MintyMelinda" },
     { message: "debugMoonRatmindfRatNes", tags: { emotes: "" }, username: "PYOSHI" },
