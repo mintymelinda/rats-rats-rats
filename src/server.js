@@ -108,7 +108,7 @@ function broadcast(payload) {
 const irc = new TwitchIrcClient({
   channel: config.channel,
   onMessage(message, tags, username) {
-    const debugCommand = findDebugMoonratCommand(username, message);
+    const debugCommand = findDebugMoonratCommand(username, message, config.mappings);
     const events = findMatchesWithPositions(message, config.mappings);
     if (debugCommand) {
       const mappingIndex = config.mappings.findIndex(
