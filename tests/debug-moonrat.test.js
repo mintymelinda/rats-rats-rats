@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { findDebugMoonratCommand, getDebugMoonratKeyword } from "../src/debug-moonrat.js";
+import { filterDebugMoonratKeywordMatch, findDebugMoonratCommand, getDebugMoonratKeyword } from "../src/debug-moonrat.js";
+import { findMatchesWithPositions } from "../src/matcher.js";
 
 const mappings = [
   { keyword: "mindyfRatNes", moonratText: "MOONRAT" },
@@ -24,6 +25,16 @@ test("selects the exact keyword mapping so its configured moonratText is used", 
     length: "debugMoonRatmindyfCow".length,
   });
   assert.equal(mappings.find((mapping) => mapping.keyword === command.keyword).moonratText, "MOONCOW");
+});
+
+test("does not also treat the keyword suffix inside a debug command as a regular GIF match", () => {
+  const message = "before debugMoonRatmindyfCow after";
+  const command = findDebugMoonratCommand("MintyMelinda", message, mappings);
+  const regularEvents = findMatchesWithPositions(message, mappings);
+  const filteredEvents = filterDebugMoonratKeywordMatch(regularEvents, command);
+
+  assert.equal(regularEvents.some((event) => event.mapping.keyword === "mindyfCow"), true);
+  assert.deepEqual(filteredEvents, []);
 });
 
 test("recognizes keyword-specific debug commands as separate tokens in a burst", () => {
