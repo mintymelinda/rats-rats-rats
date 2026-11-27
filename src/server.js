@@ -22,8 +22,6 @@ const mappingManager = createMappingManager({
 });
 config.mappings = mappingManager.mappings;
 const emoteCatalog = createTwitchEmoteCatalog({
-  channel: config.channel,
-  channels: config.twitchEmoteChannels,
   clientId: config.twitchClientId,
   clientSecret: config.twitchClientSecret,
 });
@@ -126,7 +124,7 @@ function broadcast(payload) {
 
 const irc = new TwitchIrcClient({
   channel: config.channel,
-  onMessage(message, tags, username) {
+  async onMessage(message, tags, username) {
     const command = handleMappingCommand({ username, message, manager: mappingManager });
     if (command.handled) {
       if (command.error) console.warn(`Mapping command from ${username}: ${command.error}`);
@@ -158,9 +156,9 @@ const irc = new TwitchIrcClient({
     events.sort((a, b) => a.index - b.index || a.mappingIndex - b.mappingIndex);
     for (const event of events) {
       const match = event.mapping;
-      const src = match.exists
-        ? match.path
-        : (findTwitchEmote(message, tags.emotes, match.keyword) ?? emoteCatalog.find(match.keyword))?.src;
+      const taggedEmote = findTwitchEmote(message, tags.emotes, match.keyword);
+      const catalogEmote = taggedEmote || emoteCatalog.find(match.keyword) || await emoteCatalog.resolve(match.keyword);
+      const src = match.exists ? match.path : catalogEmote?.src;
       if (!src) continue;
 
       broadcast({
