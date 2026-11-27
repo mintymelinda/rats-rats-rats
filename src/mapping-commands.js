@@ -62,9 +62,13 @@ export function handleMappingCommand({ username, message, manager, logger = cons
     if (params.has("path")) settings.path = params.get("path");
     parseMappings({ [keyword]: settings });
 
+    const existed = manager.mappings.some(
+      (item) => item.normalizedKeyword === keyword.toLocaleLowerCase("en-US"),
+    );
     const mapping = manager.add(keyword, settings);
-    logger.info("Added GIF mapping \"" + keyword + "\" (" + JSON.stringify(settings) + ") at chat request of " + username);
-    return { handled: true, authorized: true, action: "add", keyword, mapping };
+    const actionName = existed ? "Updated" : "Added";
+    logger.info(actionName + " GIF mapping \"" + mapping.keyword + "\" (" + JSON.stringify(settings) + ") at chat request of " + username);
+    return { handled: true, authorized: true, action: existed ? "update" : "add", keyword: mapping.keyword, mapping };
   } catch (error) {
     logger.warn("Mapping command rejected from " + username + ": " + error.message);
     return { handled: true, authorized: true, error: error.message };

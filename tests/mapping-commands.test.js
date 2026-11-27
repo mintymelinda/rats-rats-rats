@@ -31,6 +31,33 @@ for (const message of [
   });
 }
 
+test("authorized !add updates an existing mapping and resets omitted settings to defaults", () => {
+  const { manager, logger } = setup();
+  const first = handleMappingCommand({
+    username: "MintyMelinda",
+    message: "!add mindyfRatNes?flip=true&scale=4&durationMs=12000",
+    manager,
+    logger,
+  });
+  assert.equal(first.action, "update");
+  assert.equal(first.mapping.scale, 4);
+  assert.equal(first.mapping.flip, true);
+  assert.equal(first.mapping.durationMs, 12000);
+
+  const updated = handleMappingCommand({
+    username: "MintyMelinda",
+    message: "!add MINDYFRATNES",
+    manager,
+    logger,
+  });
+  assert.equal(updated.action, "update");
+  assert.equal(updated.mapping.keyword, "mindyfRatNes");
+  assert.equal(updated.mapping.scale, 2);
+  assert.equal(updated.mapping.flip, false);
+  assert.equal(updated.mapping.durationMs, 8000);
+  assert.equal(manager.mappings.length, 1);
+});
+
 test("authorized !add supports defaults and other validated options", () => {
   const { manager, logger } = setup();
   const result = handleMappingCommand({
@@ -82,8 +109,7 @@ test("rejects invalid or unsupported add parameters without writing a mapping", 
   assert.equal(manager.mappings.length, 1);
 });
 
-test("does not allow remove parameters or adding a duplicate", () => {
+test("does not allow remove parameters", () => {
   const { manager, logger } = setup();
   assert.match(handleMappingCommand({ username: "mintymelinda", message: "!remove mindyfRatNes?x=1", manager, logger }).error, /only a keyword/);
-  assert.match(handleMappingCommand({ username: "mintymelinda", message: "!add mindyfRatNes", manager, logger }).error, /already mapped/);
 });
