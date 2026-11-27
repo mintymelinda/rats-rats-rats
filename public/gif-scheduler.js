@@ -49,20 +49,20 @@ export function createGifScheduler({
     queue.shift();
     activeRegularGifs += 1;
 
-    const configuredInterval = nextGif.queueIntervalMs;
-    const queueIntervalMs = configuredInterval === undefined || configuredInterval === null
-      ? 500
-      : Math.max(0, Number(configuredInterval) || 0);
+    let spacingScheduled = false;
+    const scheduleNext = (spacingMs) => {
+      if (spacingScheduled) return;
+      spacingScheduled = true;
+      regularTimer = setTimer(() => {
+        regularTimer = undefined;
+        processQueue();
+      }, Math.max(0, Number(spacingMs) || 0));
+    };
 
-    // Arm the cadence before spawning. This keeps synchronous completion
-    // callbacks (e.g. a failed or immediately-completed asset) from re-entering
-    // the queue and bypassing the configured spacing.
-    regularTimer = setTimer(() => {
-      regularTimer = undefined;
-      processQueue();
-    }, queueIntervalMs);
-
-    spawnRegularGif(nextGif, regularGifFinished);
+    // The browser calls onSpawnReady after loading the asset and measuring its
+    // rendered width. This spaces starts by screen distance, not an arbitrary
+    // fixed delay, while allowing all earlier GIFs to remain in flight.
+    spawnRegularGif(nextGif, regularGifFinished, scheduleNext);
   }
 
   function enqueue(gif) {
