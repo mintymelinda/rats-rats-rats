@@ -139,3 +139,34 @@ test("defaults missing queue intervals to 500ms while preserving explicit zero",
   assert.deepEqual(calls, ["regular:default-delay", "regular:no-delay"]);
   assert.equal(timers[1].delay, 0);
 });
+
+
+test("synchronous regular completion cannot bypass the configured spawn cadence", () => {
+  const calls = [];
+  const timers = [];
+  const scheduler = createGifScheduler({
+    setTimer(callback, delay) {
+      const timer = { callback, delay };
+      timers.push(timer);
+      return timer;
+    },
+    spawnRegularGif(gif, onDisplayComplete) {
+      calls.push(gif.keyword);
+      onDisplayComplete();
+    },
+    spawnMoonwalkGif() {
+      assert.fail("MOONRAT should not start before earlier queued regulars");
+    },
+  });
+
+  scheduler.enqueue({ keyword: "first", queueIntervalMs: 500 });
+  scheduler.enqueue({ keyword: "second", queueIntervalMs: 500 });
+
+  assert.deepEqual(calls, ["first"]);
+  assert.equal(timers.length, 1);
+  assert.equal(timers[0].delay, 500);
+
+  timers[0].callback();
+  assert.deepEqual(calls, ["first", "second"]);
+  assert.equal(timers.length, 2);
+});

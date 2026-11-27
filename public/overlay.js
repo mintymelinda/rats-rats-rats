@@ -59,7 +59,6 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
   image.alt = "";
   image.draggable = false;
   image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
-  image.src = src;
   activeGifs.add(image);
   overlay.append(image);
 
@@ -100,6 +99,10 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
   }, { once: true });
 
   image.addEventListener("error", completeDisplay, { once: true });
+
+  // Attach lifecycle listeners before starting the request. This ensures a
+  // cached or immediately failing asset cannot be missed by the scheduler.
+  image.src = src;
 }
 
 connect();
