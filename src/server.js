@@ -156,9 +156,12 @@ const irc = new TwitchIrcClient({
     events.sort((a, b) => a.index - b.index || a.mappingIndex - b.mappingIndex);
     for (const event of events) {
       const match = event.mapping;
-      const taggedEmote = findTwitchEmote(message, tags.emotes, match.keyword);
-      const catalogEmote = taggedEmote || emoteCatalog.find(match.keyword) || await emoteCatalog.resolve(match.keyword);
-      const src = match.exists ? match.path : catalogEmote?.src;
+      let src = match.path;
+      if (!match.exists) {
+        const taggedEmote = findTwitchEmote(message, tags.emotes, match.keyword);
+        const catalogEmote = taggedEmote || emoteCatalog.find(match.keyword) || await emoteCatalog.resolve(match.keyword);
+        src = catalogEmote?.src;
+      }
       if (!src) continue;
 
       broadcast({
