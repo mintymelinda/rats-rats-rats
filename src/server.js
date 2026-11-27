@@ -6,11 +6,8 @@ import { WebSocketServer } from "ws";
 import { loadConfig } from "./config.js";
 import { createMappingManager } from "./mapping-manager.js";
 import { handleMappingCommand } from "./mapping-commands.js";
-import { findMatchesWithPositions } from "./matcher.js";
-import { shouldMoonwalk } from "./moonwalk.js";
-import { findTwitchEmote } from "./twitch-emotes.js";
+import { resolveChatSpawnEvents } from "./chat-spawn-events.js";
 import { createEmoteRegistry } from "./emote-registry.js";
-import { filterDebugMoonratKeywordMatch, findDebugMoonratCommands } from "./debug-moonrat.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -155,47 +152,16 @@ const irc = new TwitchIrcClient({
     }
 
     config.mappings = mappingManager.mappings;
-    const debugCommands = findDebugMoonratCommands(username, message, config.mappings);
-    let events = findMatchesWithPositions(message, config.mappings);
-    events = filterDebugMoonratKeywordMatch(events, debugCommands);
-    for (const debugCommand of debugCommands) {
-      const mappingIndex = config.mappings.findIndex(
-        (mapping) => mapping.normalizedKeyword === debugCommand.keyword.toLocaleLowerCase("en-US"),
-      );
-      if (mappingIndex !== -1) {
-        events.push({
-          mapping: config.mappings[mappingIndex],
-          index: debugCommand.index,
-          mappingIndex,
-          debug: true,
-        });
-      }
-    }
-
-    events.sort((a, b) => a.index - b.index || a.mappingIndex - b.mappingIndex);
-    for (const event of events) {
-      const match = event.mapping;
-      let src = match.exists ? match.path : null;
-      if (!src) {
-        src = findTwitchEmote(message, tags.emotes, match.keyword)?.src
-          || emoteRegistry.get(match.keyword)?.src
-          || (await emoteRegistry.resolve(match.keyword))?.src;
-      }
-      if (!src) continue;
-
-      broadcast({
-        type: "spawn",
-        keyword: match.keyword,
-        src,
-        durationMs: match.durationMs,
-        scale: match.scale,
-        queueIntervalMs: config.gifQueueIntervalMs,
-        yOffsetPx: match.yOffsetPx,
-        flip: match.flip,
-        moonratText: match.moonratText,
-        moonwalk: event.debug ? true : shouldMoonwalk(Math.random, config.moonratDebug),
-      });
-    }
+    const spawnEvents = await resolveChatSpawnEvents({
+      message,
+      tags,
+      username,
+      mappings: config.mappings,
+      emoteRegistry,
+      queueIntervalMs: config.gifQueueIntervalMs,
+      moonratDebug: config.moonratDebug,
+    });
+    for (const event of spawnEvents) broadcast(event);
   },
 });
 
