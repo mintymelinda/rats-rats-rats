@@ -132,6 +132,42 @@ export function createEmoteRegistry({
     });
   }
 
+  async function loadChannelProviderCatalogs(broadcasterId) {
+    const jobs = [
+      (async () => {
+        const user = await responseJson(fetchImpl, `${SEVENTV_API}/users/twitch/${encodeURIComponent(broadcasterId)}`);
+        let set = user.emote_set || null;
+        if (!set && user.emote_set_id) {
+          set = await responseJson(fetchImpl, `${SEVENTV_API}/emote-sets/${encodeURIComponent(user.emote_set_id)}`);
+        }
+        for (const entry of set?.emotes || []) {
+          const emote = entry.data || entry.emote || entry;
+          const src = sevenTvImage(emote);
+          if (src) register(entry.name || entry.alias || emote.name, src, "7tv-channel", emote.id);
+        }
+      })(),
+      (async () => {
+        const user = await responseJson(fetchImpl, `${BTTV_API}/cached/users/twitch/${encodeURIComponent(broadcasterId)}`);
+        for (const emote of [...(user.channelEmotes || []), ...(user.sharedEmotes || [])]) {
+          register(emote.code, bttvImage(emote), "bttv-channel", emote.id);
+        }
+      })(),
+      (async () => {
+        const room = await responseJson(fetchImpl, `${FFZ_API}/room/id/${encodeURIComponent(broadcasterId)}`);
+        for (const set of Object.values(room.sets || {})) {
+          for (const emote of set.emoticons || []) {
+            const src = ffzImage(emote);
+            if (src) register(emote.name, src, "ffz-channel", emote.id);
+          }
+        }
+      })(),
+    ];
+    const results = await Promise.allSettled(jobs);
+    for (const result of results) {
+      if (result.status === "rejected") logger.warn(`Channel emote catalog unavailable: ${result.reason?.message || result.reason}`);
+    }
+  }
+
   async function loadTwitchCatalog() {
     if (!clientId || !clientSecret) {
       logger.info("Twitch emote catalogs disabled: TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET are not configured");
@@ -154,7 +190,8 @@ export function createEmoteRegistry({
       for (const emote of channelEmotes.data || []) {
         register(emote.name, twitchImage(emote), "twitch-channel", emote.id);
       }
-      logger.info(`Loaded Twitch global and #${channel} emote catalogs`);
+      await loadChannelProviderCatalogs(broadcasterId);
+      logger.info(`Loaded Twitch and third-party emote catalogs for #${channel}`);
     } catch (error) {
       logger.warn(`Twitch emote catalog refresh failed: ${error.message}`);
     }
