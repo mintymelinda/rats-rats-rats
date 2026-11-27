@@ -127,7 +127,7 @@ test("missing measured spacing falls back to the legacy 500ms cadence", () => {
   const { timers, regularReady, scheduler } = createHarness();
   scheduler.enqueue({ keyword: "default-delay" });
   regularReady[0]();
-  assert.equal(timers[0].delay, 0);
+  assert.equal(timers[0].delay, 500);
   scheduler.enqueue({ keyword: "explicit", queueIntervalMs: 750 });
   // The first timer remains pending, so the second item is not started yet.
   assert.equal(scheduler.queuedCount, 1);
