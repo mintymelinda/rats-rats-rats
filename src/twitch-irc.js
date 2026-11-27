@@ -64,8 +64,9 @@ export class TwitchIrcClient {
         continue;
       }
       const tags = parseTags(line);
-      const messageMatch = line.match(/\bPRIVMSG #\S+ :(.*)$/);
-      if (messageMatch) this.onMessage(messageMatch[1], { emotes: tags.emotes || "" });
+      const messageMatch = line.match(/\\bPRIVMSG #\\S+ :(.*)$/);
+      const usernameMatch = line.match(/(?:^| ):([^! ]+)!/);
+      if (messageMatch) this.onMessage(messageMatch[1], { emotes: tags.emotes || "" }, usernameMatch?.[1] || "");
     }
   }
 
