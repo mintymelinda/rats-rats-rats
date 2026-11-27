@@ -73,15 +73,24 @@ test("does not accept a prefix-matching channel unless its catalog contains the 
 });
 
 test("keeps the existing global catalog when a refresh fails", async () => {
-  const initial = createFetch();
-  const catalog = createTwitchEmoteCatalog({ clientId: "client-id", clientSecret: "client-secret", fetchImpl: initial.fetchImpl, logger: { info() {}, warn() {} } });
+  let failGlobal = false;
+  const { fetchImpl } = createFetch();
+  const controlledFetch = async (input, options) => {
+    const url = new URL(input);
+    if (failGlobal && url.pathname === "/helix/chat/emotes/global") return response({}, 503);
+    return fetchImpl(input, options);
+  };
+  const catalog = createTwitchEmoteCatalog({
+    clientId: "client-id",
+    clientSecret: "client-secret",
+    fetchImpl: controlledFetch,
+    logger: { info() {}, warn() {} },
+  });
+
   await catalog.refresh();
-  const failing = createFetch({ failGlobal: true });
-  // A failed refresh rejects and leaves the last successful global cache untouched.
-  const originalRefresh = catalog.refresh;
-  assert.equal(typeof originalRefresh, "function");
+  failGlobal = true;
+  await assert.rejects(catalog.refresh(), /503/);
   assert.equal(catalog.find("globaldance")?.id, "global-id");
-  assert.equal(failing.calls.length, 0);
 });
 
 test("disables catalog lookup when app credentials are absent", async () => {
