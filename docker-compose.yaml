@@ -14,6 +14,30 @@ services:
       TWITCH_CHANNEL: "mintymelinda"
       GIF_QUEUE_INTERVAL_MS: "500"
       GIF_MAPPINGS_FILE: "/data/gif-mappings.json"
+      GIF_MAPPINGS: >-
+        {
+          "mindyfRatNes": {
+            "path": "/assets/rat-nes.gif",
+            "durationMs": 8000,
+            "scale": 2,
+            "yOffsetPx": 0,
+            "flip": false
+          },
+          "mindyfRatDos": {
+            "path": "/assets/rat-dos.gif",
+            "durationMs": 8000,
+            "scale": 2,
+            "yOffsetPx": 80,
+            "flip": false
+          },
+          "mindyfRatSnes": {
+            "path": "/assets/rat-snes.gif",
+            "durationMs": 8000,
+            "scale": 2,
+            "yOffsetPx": 160,
+            "flip": false
+          }
+        }
       MOONRAT_DEBUG: "false"
       MOONRAT_TEXT_COLOR: "#fff36b"
       MOONRAT_OUTLINE_COLOR: "#a400a8"
