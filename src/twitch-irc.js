@@ -3,6 +3,18 @@ import WebSocket from "ws";
 const IRC_URL = "wss://irc-ws.chat.twitch.tv:443";
 const MAX_BACKOFF_MS = 30000;
 
+function parseTags(line) {
+  if (!line.startsWith("@")) return {};
+  const separator = line.indexOf(" ");
+  if (separator === -1) return {};
+  return Object.fromEntries(
+    line.slice(1, separator).split(";").map((entry) => {
+      const equals = entry.indexOf("=");
+      return equals === -1 ? [entry, ""] : [entry.slice(0, equals), entry.slice(equals + 1)];
+    }),
+  );
+}
+
 export class TwitchIrcClient {
   constructor({ channel, onMessage, logger = console }) {
     this.channel = channel;
@@ -51,8 +63,9 @@ export class TwitchIrcClient {
         this.socket?.send(line.replace(/^PING/, "PONG"));
         continue;
       }
+      const tags = parseTags(line);
       const messageMatch = line.match(/\bPRIVMSG #\S+ :(.*)$/);
-      if (messageMatch) this.onMessage(messageMatch[1]);
+      if (messageMatch) this.onMessage(messageMatch[1], { emotes: tags.emotes || "" });
     }
   }
 
