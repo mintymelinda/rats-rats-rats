@@ -6,11 +6,52 @@ const overlay = document.querySelector("#overlay");
 const reconnectDelayMs = 1500;
 const activeGifs = new Set();
 const nextGifDepth = createAlternatingGifDepth();
+const queueDebugEnabled = new URLSearchParams(window.location.search).get("debugQueue") === "1";
+let debugPanel;
+let debugLines = [];
 let socket;
 
+function queueDebug(message) {
+  if (!queueDebugEnabled) return;
+  const line = `${new Date().toLocaleTimeString()} ${message}`;
+  console.info(`[gif-queue] ${line}`);
+  debugLines.push(line);
+  debugLines = debugLines.slice(-24);
+  if (debugPanel) debugPanel.textContent = debugLines.join("\\n");
+}
+
+if (queueDebugEnabled) {
+  debugPanel = document.createElement("pre");
+  debugPanel.setAttribute("aria-label", "GIF queue diagnostics");
+  Object.assign(debugPanel.style, {
+    position: "fixed",
+    top: "8px",
+    left: "8px",
+    zIndex: "2147483647",
+    maxWidth: "min(95vw, 900px)",
+    maxHeight: "45vh",
+    overflow: "hidden",
+    margin: "0",
+    padding: "8px",
+    color: "#fff",
+    background: "rgba(0, 0, 0, .85)",
+    font: "12px/1.4 monospace",
+    whiteSpace: "pre-wrap",
+    pointerEvents: "none",
+  });
+  document.body.append(debugPanel);
+  queueDebug("diagnostics enabled");
+}
+
 const gifScheduler = createGifScheduler({
-  spawnRegularGif: (gif, onDisplayComplete) => spawnGif(gif, onDisplayComplete),
-  spawnMoonwalkGif: (gif, onDisplayComplete) => spawnGif(gif, onDisplayComplete),
+  spawnRegularGif: (gif, onDisplayComplete) => {
+    queueDebug(`DISPATCH regular keyword=${gif.keyword ?? "?"} interval=${gif.queueIntervalMs ?? "default"}ms queuedAfterDispatch=${gifScheduler.queuedCount} active=${gifScheduler.activeRegularCount}`);
+    spawnGif(gif, onDisplayComplete);
+  },
+  spawnMoonwalkGif: (gif, onDisplayComplete) => {
+    queueDebug(`DISPATCH MOONRAT keyword=${gif.keyword ?? "?"}`);
+    spawnGif(gif, onDisplayComplete);
+  },
   onMoonratStageChange(active) {
     overlay.classList.toggle("moonrat-stage", active);
   },
@@ -20,6 +61,7 @@ function connect() {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
+  socket.addEventListener("open", () => queueDebug("WebSocket connected"));
   socket.addEventListener("message", (event) => {
     let payload;
     try {
@@ -32,11 +74,15 @@ function connect() {
       document.documentElement.style.setProperty("--moonrat-outline-color", payload.moonratColors.outline);
       document.documentElement.style.setProperty("--moonrat-glow-color", payload.moonratColors.glow);
     } else if (payload.type === "spawn") {
+      if (!payload.moonwalk) {
+        queueDebug(`RECEIVE regular keyword=${payload.keyword ?? "?"} interval=${payload.queueIntervalMs ?? "missing"}ms queuedBefore=${gifScheduler.queuedCount}`);
+      }
       gifScheduler.enqueue(payload);
     }
   });
 
   socket.addEventListener("close", () => {
+    queueDebug("WebSocket closed; reconnecting");
     window.setTimeout(connect, reconnectDelayMs);
   });
 
