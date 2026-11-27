@@ -49,7 +49,7 @@ function connect() {
   socket.addEventListener("error", () => socket.close());
 }
 
-function announceMoonrat(text) {
+function announceMoonrat(text, durationMs) {
   const announcement = document.createElement("div");
   announcement.className = "moonrat-announcement";
   announcement.textContent = text || "MOONRAT";
@@ -84,7 +84,7 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
       if (moonwalk) completeDisplay();
       return;
     }
-    const scaledWidth = image.naturalWidth * scale;
+    if (moonwalk) announceMoonrat(moonratText, durationMs);\n\n    const scaledWidth = image.naturalWidth * scale;
     image.style.width = `${image.naturalWidth}px`;
     image.style.height = "auto";
 
