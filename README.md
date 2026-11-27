@@ -2,49 +2,48 @@
 
 A Docker-based Twitch chat GIF browser-source overlay.
 
-## Configuration
+## Persistent chat-managed mappings
 
-All runtime configuration lives directly in `docker-compose.yaml`. Edit the service's `environment` values and recreate the container to apply changes.
+GIF mappings are stored in the persistent Docker volume `mappings-data` at `/data/gif-mappings.json`. The server creates this file from the built-in defaults on first startup. Changes made through chat are saved immediately and remain in place across container restarts and image rebuilds. Do not use `docker-compose down -v` unless you intend to delete the mappings volume.
 
-Each keyword can have its own animation speed, size, vertical placement, facing direction, and MOONRAT announcement text.
-Each entry in `GIF_MAPPINGS` is an object with:
-- `path` (optional): GIF file path under `/assets/`. Omit this field to use the matching Twitch emote exclusively. If a configured local file is missing, the overlay will also try the matching Twitch emote when that emote appears in chat.
-- `durationMs`: time for that animation to cross the screen in milliseconds (default `8000`, range `250`–`120000`).
-- `scale`: display scale for that animation (default `2`; supported values `1`, `2`, `4`, or `8`).
-- `yOffsetPx`: vertical offset in unscaled image pixels (default `0`). Positive values move that animation up; negative values move it down. The offset is multiplied by the image's scale, so it remains proportional to the image size. Supported range: `-10000` to `10000`.
-- `flip`: horizontally mirror the animation (default `false`). Set to `true` to make it face the opposite direction.
-- `moonratText`: optional announcement text for this animation's moonwalk (default is inferred from the first PascalCase segment in its keyword, prefixed with `MOON`; maximum 40 characters).
+The following commands are available to the channel owner and the existing authorized account `PYOSHI`:
 
-For example, `mindyfRatNes` and `mindyfRatSnes` announce `MOONRAT`, `mindyfCow` announces `MOONCOW`, and `mindyfDog` announces `MOONDOG`. You can override the inferred value per mapping:
+- `!add kintBee` adds a Twitch-emote-only mapping with the default animation settings.
+- `!add kintBee?flipped=true&scale=4` adds the mapping with horizontal flipping and scale 4.
+- `!remove kintBee` removes the mapping.
 
-```yaml
-GIF_MAPPINGS: >-
-  {
-    "mindyfCow": {
-      "path": "/assets/cow.gif",
-      "moonratText": "MOONCOW"
-    },
-    "mindyfDragon": {
-      "path": "/assets/dragon.gif",
-      "moonratText": "MOON DRAGON!"
-    },
-    "graped4Based": {
-      "durationMs": 4000,
-      "scale": 1
-    }
-  }
-```
+Commands are case-insensitive. The keyword may contain 1–64 letters, numbers, or underscores. An existing mapping cannot be added a second time; remove it first if you want to replace it. Unauthorized commands are ignored. Management commands do not trigger GIF matching.
 
-When a configured keyword's local GIF exists, it is always used. If no local GIF path is configured, or the configured file is missing, the bot uses the matching Twitch emote ID supplied in that chat message's IRC `emotes` tag. This requires no Twitch OAuth credentials. If Twitch does not identify that exact keyword as an emote in the message, that spawn is silently skipped. Keywords not declared in `GIF_MAPPINGS` are never spawned.
+Supported `!add` query parameters:
 
-## MOONRAT takeover
+| Parameter | Default | Allowed values |
+| --- | --- | --- |
+| `scale` | `2` | `1`, `2`, `4`, or `8` |
+| `flipped` (or `flip`) | `false` | `true` or `false` |
+| `durationMs` | `8000` | integer from `250` to `120000` |
+| `yOffsetPx` | `0` | integer from `-10000` to `10000` |
+| `moonratText` | inferred from keyword | non-empty text up to 40 characters |
+| `path` | none | optional GIF path under `/assets/` |
 
-A moonwalk-triggered animation immediately takes over the overlay: all currently visible regular animations are cleared, and no regular animations spawn during its solo animation. After the moonwalking animation finishes, the overlay stays empty for an additional buffer equal to that animation's configured `durationMs`. Queued regular animations then resume in their original order. Additional moonwalk events wait ahead of regular animations.
+URL-encode spaces or special characters in parameter values. Twitch emote-only mappings need no local GIF file: the server resolves the emote ID from Twitch IRC tags when that keyword appears as an emote in chat.
 
-Other Compose settings:
+The server applies changes immediately. No container restart or browser-source refresh is required for new chat messages to use the updated mappings.
+
+## Static configuration
+
+Runtime settings remain in `docker-compose.yaml`:
+
 - `TWITCH_CHANNEL`: Twitch channel to monitor.
 - `GIF_QUEUE_INTERVAL_MS`: delay between queued spawns; `0` disables the delay.
-- `PORT` and the published port mapping: container and host HTTP ports.
+- `MOONRAT_DEBUG`: force every GIF spawn to moonwalk when set to `true`.
+- `MOONRAT_TEXT_COLOR`, `MOONRAT_OUTLINE_COLOR`, `MOONRAT_GLOW_COLOR`: announcement colors.
+- `GIF_MAPPINGS_FILE`: path to the persistent JSON mapping file (default in Compose: `/data/gif-mappings.json`).
+
+Existing mapping settings remain supported: `path` (optional), `durationMs`, `scale`, `yOffsetPx`, `flip`, and `moonratText`. If a configured local GIF exists it is used; otherwise the server falls back to the matching Twitch emote ID from the message's IRC `emotes` tag.
+
+## MOONRAT behavior
+
+A moonwalk-triggered animation waits until regular GIFs already ahead of it have completed their traversal, then runs as an exclusive stage. Later GIFs remain queued in FIFO order until the moonwalk animation completes. The announcement text is inferred from the first PascalCase segment in the keyword (for example, `mindyfCow` announces `MOONCOW`) and can be overridden with `moonratText`.
 
 ## Authorized MOONRAT debug commands
 
@@ -52,5 +51,3 @@ These exact chat messages force the configured NES rat animation to moonwalk, by
 
 - `MintyMelinda`: `debugMoonRatmindyfRatNes`
 - `PYOSHI`: `debugMoonRatmindyfRatNes`
-
-The sender and full message must match; other users, extra text, or altered command spelling do not trigger the debug spawn.
