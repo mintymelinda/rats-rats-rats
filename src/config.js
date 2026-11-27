@@ -66,19 +66,21 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
   return Object.entries(mappings).map(([keyword, mapping]) => {
     if (!keyword.trim()) throw new Error("GIF_MAPPINGS keywords cannot be empty");
     if (!mapping || Array.isArray(mapping) || typeof mapping !== "object") {
-      throw new Error(`GIF mapping "${keyword}" must be an object with path and optional display settings`);
+      throw new Error(`GIF mapping "${keyword}" must be an object with optional path and display settings`);
     }
 
     const gifPath = mapping.path;
-    if (typeof gifPath !== "string" || !gifPath.startsWith("/assets/")) {
-      throw new Error(`GIF mapping "${keyword}" path must point to a file under /assets/`);
-    }
-    if (path.extname(gifPath).toLowerCase() !== ".gif") {
-      throw new Error(`GIF mapping "${keyword}" must reference a .gif file`);
-    }
-    const resolved = path.resolve("/assets", gifPath.slice("/assets/".length));
-    if (resolved !== "/assets" && !resolved.startsWith("/assets/")) {
-      throw new Error(`GIF mapping "${keyword}" escapes the assets directory`);
+    if (gifPath !== undefined) {
+      if (typeof gifPath !== "string" || !gifPath.startsWith("/assets/")) {
+        throw new Error(`GIF mapping "${keyword}" path must point to a file under /assets/`);
+      }
+      if (path.extname(gifPath).toLowerCase() !== ".gif") {
+        throw new Error(`GIF mapping "${keyword}" must reference a .gif file`);
+      }
+      const resolved = path.resolve("/assets", gifPath.slice("/assets/".length));
+      if (resolved !== "/assets" && !resolved.startsWith("/assets/")) {
+        throw new Error(`GIF mapping "${keyword}" escapes the assets directory`);
+      }
     }
 
     const scale = positiveInteger(mapping.scale, `GIF mapping "${keyword}" scale`, 2);
@@ -93,13 +95,13 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
     return {
       keyword,
       normalizedKeyword: keyword.toLocaleLowerCase("en-US"),
-      path: gifPath,
+      path: gifPath ?? null,
       durationMs: positiveInteger(mapping.durationMs, `GIF mapping "${keyword}" durationMs`, 8000, { min: 250, max: 120000 }),
       scale,
       yOffsetPx: parseYOffset(mapping.yOffsetPx, keyword),
       flip,
       moonratText: parseMoonratText(mapping.moonratText, keyword),
-      exists: fs.existsSync(gifPath) && fs.statSync(gifPath).isFile(),
+      exists: Boolean(gifPath && fs.existsSync(gifPath) && fs.statSync(gifPath).isFile()),
     };
   });
 }
