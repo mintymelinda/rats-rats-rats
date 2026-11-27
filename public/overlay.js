@@ -6,16 +6,8 @@ const reconnectDelayMs = 1500;
 const activeGifs = new Set();
 let socket;
 
-function clearActiveGifs() {
-  for (const image of activeGifs) {
-    image.remove();
-  }
-  activeGifs.clear();
-}
-
 const gifScheduler = createGifScheduler({
-  clearActiveGifs,
-  spawnRegularGif: (gif) => spawnGif(gif),
+  spawnRegularGif: (gif, onDisplayComplete) => spawnGif(gif, onDisplayComplete),
   spawnMoonwalkGif: (gif, onDisplayComplete) => spawnGif(gif, onDisplayComplete),
   onMoonratStageChange(active) {
     overlay.classList.toggle("moonrat-stage", active);
@@ -80,7 +72,7 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
 
   image.addEventListener("load", () => {
     if (!image.isConnected) {
-      if (moonwalk) completeDisplay();
+      completeDisplay();
       return;
     }
     if (moonwalk) announceMoonrat(moonratText, durationMs);
@@ -105,13 +97,7 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
     animation.addEventListener("finish", completeDisplay, { once: true });
   }, { once: true });
 
-  image.addEventListener("error", () => {
-    if (moonwalk) completeDisplay();
-    else {
-      activeGifs.delete(image);
-      image.remove();
-    }
-  }, { once: true });
+  image.addEventListener("error", completeDisplay, { once: true });
 }
 
 connect();
