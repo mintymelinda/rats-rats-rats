@@ -9,6 +9,9 @@ RUN npm install --omit=dev --no-audit --no-fund
 COPY src ./src
 COPY public ./public
 
+RUN mkdir -p /data && chown node:node /data
+VOLUME ["/data"]
+
 ENV PORT=3000
 EXPOSE 3000
 

@@ -17,8 +17,8 @@ function positiveInteger(value, name, fallback, { min = 1, max = Number.MAX_SAFE
 
 function parseBoolean(value, name, fallback = false) {
   if (value === undefined || value === null || value === "") return fallback;
-  if (value === "true") return true;
-  if (value === "false") return false;
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
   throw new Error(`${name} must be "true" or "false"`);
 }
 
@@ -51,10 +51,10 @@ function parseMoonratText(value, keyword) {
   return value.trim().toLocaleUpperCase("en-US");
 }
 
-export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
+export function parseMappingDefinitions(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
   let mappings;
   try {
-    mappings = JSON.parse(raw);
+    mappings = typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch {
     throw new Error("GIF_MAPPINGS must be a valid JSON object");
   }
@@ -62,7 +62,11 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
   if (!mappings || Array.isArray(mappings) || typeof mappings !== "object") {
     throw new Error("GIF_MAPPINGS must be a JSON object of keyword-to-GIF mappings");
   }
+  return mappings;
+}
 
+export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
+  const mappings = parseMappingDefinitions(raw);
   return Object.entries(mappings).map(([keyword, mapping]) => {
     if (!keyword.trim()) throw new Error("GIF_MAPPINGS keywords cannot be empty");
     if (!mapping || Array.isArray(mapping) || typeof mapping !== "object") {
@@ -87,7 +91,7 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
     if (![1, 2, 4, 8].includes(scale)) {
       throw new Error(`GIF mapping "${keyword}" scale must be one of: 1, 2, 4, 8`);
     }
-    const flip = mapping.flip ?? false;
+    const flip = mapping.flip ?? mapping.flipped ?? false;
     if (typeof flip !== "boolean") {
       throw new Error(`GIF mapping "${keyword}" flip must be a boolean`);
     }
@@ -112,6 +116,7 @@ export function loadConfig(env = process.env) {
     throw new Error("TWITCH_CHANNEL must be a valid Twitch channel login");
   }
 
+  const mappingDefinitions = parseMappingDefinitions(env.GIF_MAPPINGS || JSON.stringify(DEFAULT_MAPPINGS));
   return {
     channel,
     port: positiveInteger(env.PORT, "PORT", 3000, { min: 1, max: 65535 }),
@@ -122,6 +127,8 @@ export function loadConfig(env = process.env) {
       outline: parseColor(env.MOONRAT_OUTLINE_COLOR, "MOONRAT_OUTLINE_COLOR", "#a400a8"),
       glow: parseColor(env.MOONRAT_GLOW_COLOR, "MOONRAT_GLOW_COLOR", "#fff36b"),
     },
-    mappings: parseMappings(env.GIF_MAPPINGS),
+    mappingsFile: env.GIF_MAPPINGS_FILE || null,
+    mappingDefinitions,
+    mappings: parseMappings(mappingDefinitions),
   };
 }

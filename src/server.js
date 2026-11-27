@@ -4,6 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
 import { loadConfig } from "./config.js";
+import { createMappingManager } from "./mapping-manager.js";
+import { handleMappingCommand } from "./mapping-commands.js";
 import { findMatchesWithPositions } from "./matcher.js";
 import { shouldMoonwalk } from "./moonwalk.js";
 import { findTwitchEmote } from "./twitch-emotes.js";
@@ -13,6 +15,11 @@ import { TwitchIrcClient } from "./twitch-irc.js";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const config = loadConfig();
+const mappingManager = createMappingManager({
+  filePath: config.mappingsFile,
+  initialDefinitions: config.mappingDefinitions,
+});
+config.mappings = mappingManager.mappings;
 
 for (const mapping of config.mappings) {
   if (!mapping.exists) {
@@ -23,6 +30,7 @@ for (const mapping of config.mappings) {
   }
 }
 console.info(`Loaded ${config.mappings.length} keyword mapping(s) for #${config.channel}`);
+if (config.mappingsFile) console.info(`Persistent GIF mappings: ${config.mappingsFile}`);
 if (config.moonratDebug) {
   console.warn("MOONRAT debug mode enabled: every GIF spawn will moonwalk");
 }
@@ -112,6 +120,17 @@ function broadcast(payload) {
 const irc = new TwitchIrcClient({
   channel: config.channel,
   onMessage(message, tags, username) {
+    const command = handleMappingCommand({ username, message, manager: mappingManager });
+    if (command.handled) {
+      if (command.error) console.warn(`Mapping command from ${username}: ${command.error}`);
+      if (command.action) {
+        config.mappings = mappingManager.mappings;
+        broadcast({ type: "mappings-updated", keywords: config.mappings.map(({ keyword }) => keyword) });
+      }
+      return;
+    }
+
+    config.mappings = mappingManager.mappings;
     const debugCommands = findDebugMoonratCommands(username, message, config.mappings);
     let events = findMatchesWithPositions(message, config.mappings);
     events = filterDebugMoonratKeywordMatch(events, debugCommands);
