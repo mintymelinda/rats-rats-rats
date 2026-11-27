@@ -44,7 +44,9 @@ function sevenTvImage(emote) {
     || files.find((item) => item.name === "1x.webp")
     || files.find((item) => item.format === "WEBP");
   if (!file?.name) return null;
-  const base = (host.url.startsWith("http") ? host.url : `https:${host.url}`).replace("{id}", emote.id);
+  const base = (host.url.startsWith("http") ? host.url : `https:${host.url}`)
+    .replaceAll("{{id}}", emote.id)
+    .replaceAll("{id}", emote.id);
   return `${base.replace(/\/$/, "")}/${file.name}`;
 }
 
