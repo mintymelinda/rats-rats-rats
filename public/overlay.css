@@ -44,8 +44,12 @@ body {
   display: none;
 }
 
-.moonrat-gif {
-  z-index: 10;
+.rat-gif--behind {
+  z-index: 0;
+}
+
+.rat-gif--ahead {
+  z-index: 1;
 }
 
 .moonrat-announcement {
