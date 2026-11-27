@@ -38,6 +38,19 @@ function parseYOffset(value, keyword) {
   return yOffsetPx;
 }
 
+function inferMoonratText(keyword) {
+  const animal = keyword.match(/[A-Z][a-z]+/)?.[0];
+  return animal ? `MOON${animal.toLocaleUpperCase("en-US")}` : "MOONRAT";
+}
+
+function parseMoonratText(value, keyword) {
+  if (value === undefined || value === null) return inferMoonratText(keyword);
+  if (typeof value !== "string" || !value.trim() || value.trim().length > 40) {
+    throw new Error(`GIF mapping "${keyword}" moonratText must be a non-empty string of at most 40 characters`);
+  }
+  return value.trim().toLocaleUpperCase("en-US");
+}
+
 export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
   let mappings;
   try {
@@ -85,6 +98,7 @@ export function parseMappings(raw = JSON.stringify(DEFAULT_MAPPINGS)) {
       scale,
       yOffsetPx: parseYOffset(mapping.yOffsetPx, keyword),
       flip,
+      moonratText: parseMoonratText(mapping.moonratText, keyword),
       exists: fs.existsSync(gifPath) && fs.statSync(gifPath).isFile(),
     };
   });

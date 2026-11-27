@@ -13,17 +13,45 @@ test("loads the documented defaults", () => {
     outline: "#a400a8",
     glow: "#fff36b",
   });
-  assert.deepEqual(config.mappings.map(({ keyword, durationMs, scale, yOffsetPx, flip }) => [
+  assert.deepEqual(config.mappings.map(({ keyword, durationMs, scale, yOffsetPx, flip, moonratText }) => [
     keyword,
     durationMs,
     scale,
     yOffsetPx,
     flip,
+    moonratText,
   ]), [
-    ["mindyfRatNes", 8000, 2, 0, false],
-    ["mindyfRatDos", 8000, 2, 0, false],
-    ["mindyfRatSnes", 8000, 2, 0, false],
+    ["mindyfRatNes", 8000, 2, 0, false, "MOONRAT"],
+    ["mindyfRatDos", 8000, 2, 0, false, "MOONRAT"],
+    ["mindyfRatSnes", 8000, 2, 0, false, "MOONRAT"],
   ]);
+});
+
+test("infers the moonwalk announcement from the first PascalCase keyword segment", () => {
+  const mappings = parseMappings(JSON.stringify({
+    mindyfRatNes: { path: "/assets/rat-nes.gif" },
+    mindyfCow: { path: "/assets/cow.gif" },
+    mindyfDog: { path: "/assets/dog.gif" },
+    mindyfRatSnes: { path: "/assets/rat-snes.gif" },
+  }));
+
+  assert.deepEqual(mappings.map(({ moonratText }) => moonratText), [
+    "MOONRAT",
+    "MOONCOW",
+    "MOONDOG",
+    "MOONRAT",
+  ]);
+});
+
+test("allows a per-GIF moonratText override and normalizes it to uppercase", () => {
+  const [mapping] = parseMappings(JSON.stringify({
+    mindyfRatNes: { path: "/assets/rat.gif", moonratText: "moon-beast" },
+  }));
+
+  assert.equal(mapping.moonratText, "MOON-BEAST");
+  assert.throws(() => parseMappings(JSON.stringify({
+    mindyfRatNes: { path: "/assets/rat.gif", moonratText: "  " },
+  })), /moonratText/);
 });
 
 test("parses per-GIF paths, animation durations, scales, offsets, and flips", () => {
