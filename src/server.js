@@ -52,6 +52,7 @@ const publicFiles = new Map([
   ["/gif-queue.js", "gif-queue.js"],
   ["/gif-scheduler.js", "gif-scheduler.js"],
   ["/gif-motion.js", "gif-motion.js"],
+  ["/gif-depth.js", "gif-depth.js"],
 ]);
 
 const server = http.createServer((request, response) => {
