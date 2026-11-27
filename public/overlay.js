@@ -58,7 +58,7 @@ function spawnGif({ src, durationMs, scale, yOffsetPx, flip = false, moonwalk = 
   image.className = `rat-gif rat-gif--${nextGifDepth()}${moonwalk ? " moonrat-gif" : ""}`;
   image.alt = "";
   image.draggable = false;
-  image.style.bottom = `${(Number(yOffsetPx) || 0) * scale}px`;
+  image.style.bottom = `${Number(yOffsetPx) || 0}px`;
   activeGifs.add(image);
   overlay.append(image);
 
