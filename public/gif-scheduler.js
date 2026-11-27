@@ -34,7 +34,7 @@ export function createGifScheduler({
   }
 
   function processQueue() {
-    if (moonratStageActive || activeRegularGifs > 0 || regularTimer !== undefined || queue.length === 0) return;
+    if (moonratStageActive || regularTimer !== undefined || queue.length === 0) return;
 
     const nextGif = queue[0];
     if (nextGif.moonwalk) {
