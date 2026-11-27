@@ -9,6 +9,7 @@ import { handleMappingCommand } from "./mapping-commands.js";
 import { findMatchesWithPositions } from "./matcher.js";
 import { shouldMoonwalk } from "./moonwalk.js";
 import { findTwitchEmote } from "./twitch-emotes.js";
+import { createTwitchEmoteCatalog } from "./twitch-emote-catalog.js";
 import { filterDebugMoonratKeywordMatch, findDebugMoonratCommands } from "./debug-moonrat.js";
 import { TwitchIrcClient } from "./twitch-irc.js";
 
@@ -20,6 +21,12 @@ const mappingManager = createMappingManager({
   initialDefinitions: config.mappingDefinitions,
 });
 config.mappings = mappingManager.mappings;
+const emoteCatalog = createTwitchEmoteCatalog({
+  channel: config.channel,
+  channels: config.twitchEmoteChannels,
+  clientId: config.twitchClientId,
+  clientSecret: config.twitchClientSecret,
+});
 
 for (const mapping of config.mappings) {
   if (!mapping.exists) {
@@ -153,7 +160,7 @@ const irc = new TwitchIrcClient({
       const match = event.mapping;
       const src = match.exists
         ? match.path
-        : findTwitchEmote(message, tags.emotes, match.keyword)?.src;
+        : (findTwitchEmote(message, tags.emotes, match.keyword) ?? emoteCatalog.find(match.keyword))?.src;
       if (!src) continue;
 
       broadcast({
@@ -172,14 +179,26 @@ const irc = new TwitchIrcClient({
   },
 });
 
-server.listen(config.port, "0.0.0.0", () => {
+server.listen(config.port, "0.0.0.0", async () => {
   console.info(`Overlay listening on http://0.0.0.0:${config.port}`);
+  if (emoteCatalog.enabled) {
+    try {
+      await emoteCatalog.refresh();
+      emoteCatalog.start();
+    } catch (error) {
+      console.warn(`Unable to load Twitch emote catalog; IRC emote-tag fallback remains available: ${error.message}`);
+      emoteCatalog.start();
+    }
+  } else {
+    console.info("Twitch emote catalog disabled; set TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET to enable it");
+  }
   irc.start();
 });
 
 function shutdown(signal) {
   console.info(`${signal} received; shutting down`);
   irc.stop();
+  emoteCatalog.stop();
   for (const client of webSockets.clients) client.close(1001, "Server shutting down");
   webSockets.close();
   server.close(() => process.exit(0));
