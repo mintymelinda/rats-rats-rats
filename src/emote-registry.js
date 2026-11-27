@@ -61,7 +61,7 @@ function ffzImage(emote) {
 }
 
 async function responseJson(fetchImpl, url, options) {
-  const response = await fetchImpl(url, options);
+  const response = await fetchImpl(url, { ...options, signal: options?.signal || AbortSignal.timeout(8000) });
   if (!response.ok) throw new Error(`HTTP ${response.status} for ${new URL(url).host}`);
   return response.json();
 }
